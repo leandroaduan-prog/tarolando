@@ -198,6 +198,7 @@ ${ads}${ld}
 <header class="site-head"><a class="home" href="${u("/")}" aria-label="Tá Rolando? página inicial"><img class="logo-mark" src="${u("/icons/logo-mark.png")}" alt="" width="58" height="52">${LOGO}</a>
 <button class="place" id="place" type="button" aria-label="Escolha seu pico"><span class="pin"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="10" r="2.6" fill="currentColor"/></svg></span><span class="place-txt"><b>Escolha seu pico</b><small>Por estado, cidade ou perto de você</small></span><span class="chev" aria-hidden="true">›</span></button>
 </header>
+<a class="install-tag" id="install-tag" href="#install" hidden><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0l-5-5m5 5l5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Baixe o app grátis: role até o fim da página</a>
 ${crumbs.length > 1 ? `<nav aria-label="Você está em"><ol class="crumbs">${crumbs.map((c, i) => `<li>${i === crumbs.length - 1 ? esc(c[0]) : `<a href="${u(c[1])}">${esc(c[0])}</a>`}</li>`).join("")}</ol></nav>` : ""}
 ${body}
 <section class="install" id="install" hidden>
@@ -241,6 +242,7 @@ export function homePage(all) {
       <p class="label" style="margin:6px 0 0">Como ler a nota</p>${legend()}
     </div>
   </section>
+  <section id="local" hidden></section>
   ${adSlot("home")}
   <section><h2 class="section-title">Hoje em cada estado</h2><ul class="list">${perUf.map(x => card(x.b.p)).join("")}</ul></section>
   <section><h2 class="section-title">Escolha o estado</h2><ul class="grid-links">${ufs.map(uf => `<li><a href="${u(ufPath(uf))}">${UFN[uf]}<small>${all.filter(p => p.uf === uf).length} picos</small></a></li>`).join("")}</ul></section>

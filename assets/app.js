@@ -84,6 +84,45 @@
       <div class="week">${p.wk.map((w, i) => `<a href="${B + p.u}#dia-${i}" class="${i === bi ? "best" : ""}" style="display:grid;gap:3px;justify-items:center;color:inherit;text-decoration:none;padding:4px 0"><span class="h">${fmt(w[1])}</span><span class="bar" style="--sc:var(--${COND[w[0]][1]});height:${(8 + 46 * (w[1] / mh)).toFixed(0)}px"></span><span class="d">${dn(i)}</span></a>`).join("")}</div>
       ${old ? `<p class="soft" style="margin:0;position:relative;font-size:.8rem">Previsão de ${HOJE.datas[0].split("-").reverse().join("/")}. Atualize a página.</p>` : ""}`;
   }
+  /* Praias da cidade do seu pico (ou perto dele), da melhor para a pior */
+  function cardHTML(id, km) {
+    const p = HOJE.picos[id];
+    const [H, per, sd, wd, ws, kind] = p.a, s = p.wk[0][0];
+    const mh = Math.max(1, ...p.wk.map(w => w[1]));
+    const dn = i => { if (i === 0) return "Hoje"; const [y, m, d] = HOJE.datas[i].split("-").map(Number); return ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay()]; };
+    const FL = { S: "Isolado", B: "Ondas grandes", T: "Risco de tubarão" };
+    return `<li class="card"><a class="card-main" href="${B + p.u}">
+      <div class="card-top"><h3>${esc(p.n)}</h3><div class="city">${esc(p.c)} · ${p.uf}${km != null ? ` · ${Math.round(km)} km` : ""} · <span class="tag">${esc(p.lv)}</span> ${[...(p.fl || "")].filter(k => FL[k]).map(k => `<span class="tag flag-${k}">${FL[k]}</span>`).join(" ")}</div></div>
+      <div class="row">${pill(s)}${sayH(s)}</div>
+      <div class="stats">
+        <div class="stat"><span>Ondulação</span><b>${fmt(H)} m · ${per}s<br>${c16(sd)}</b></div>
+        <div class="stat"><span>Vento</span><b>${kind === "sem vento" ? "Sem vento" : ws + " km/h " + c16(wd) + "<br>" + kind}</b></div>
+        <div class="stat"><span>Maré alta</span><b>${p.hi || "–"}</b></div>
+      </div>
+      <div class="window">Hoje, melhor janela: <strong>${hh(p.bw[0])} às ${hh(p.bw[1])}</strong>.<br>${p.ww ? `Vento a favor: <strong>${hh(p.ww[0])} às ${hh(p.ww[1])}</strong>` : "Sem horário de vento a favor"}</div>
+      <div class="mini8" aria-hidden="true">${p.wk.map(w => `<i style="--sc:var(--${COND[w[0]][1]});height:${(6 + 28 * (w[1] / mh)).toFixed(0)}px"></i>`).join("")}</div>
+      <div class="mini8-l" aria-hidden="true">${p.wk.map((w, i) => `<span>${dn(i)}</span>`).join("")}</div>
+    </a><button class="fav" type="button" aria-pressed="false" data-fav="${id}" aria-label="Favoritar ${esc(p.n)}"></button></li>`;
+  }
+  function renderLocal(refId) {
+    const el = $("#local");
+    if (!el || !HOJE.picos[refId]) return;
+    const ref = HOJE.picos[refId], pos = new Map(IDX.picos.map(p => [p[0], p]));
+    const rp = pos.get(refId);
+    const rank = id => { const s = HOJE.picos[id].wk[0][0]; return s === 5 ? 0.5 : s; };
+    let ids = Object.keys(HOJE.picos).filter(id => HOJE.picos[id].c === ref.c && HOJE.picos[id].uf === ref.uf);
+    let title = `Hoje em ${esc(ref.c)}`;
+    if (ids.length < 4 && rp) { // cidade com poucos picos: inclui os vizinhos até 40 km
+      const extra = Object.keys(HOJE.picos).filter(id => !ids.includes(id) && pos.get(id) && kmTo(rp[4], rp[5], pos.get(id)) <= 30);
+      if (extra.length) { ids = ids.concat(extra); title = `Hoje em ${esc(ref.c)} e região`; }
+    }
+    ids.sort((a, b) => rank(b) - rank(a) || HOJE.picos[b].a[0] - HOJE.picos[a].a[0]);
+    ids = ids.slice(0, 12);
+    el.innerHTML = `<h2 class="section-title">${title}</h2><p class="muted" style="margin:-4px 0 10px;font-size:.88rem">Da melhor para a pior condição de hoje.</p>
+      <ul class="list">${ids.map(id => cardHTML(id, rp && pos.get(id) && id !== refId ? kmTo(rp[4], rp[5], pos.get(id)) : null)).join("")}</ul>`;
+    el.hidden = false;
+    paintFavs();
+  }
   async function renderYour() {
     const el = $("#your");
     if (!el) return;
@@ -93,6 +132,7 @@
       const id = list.includes(sumFav) ? sumFav : list[0];
       el.innerHTML = panelHTML(id, `<p class="label">Seu pico</p>
         ${list.length > 1 ? `<div class="favsw">${list.map(x => `<button type="button" data-sumfav="${x}" aria-pressed="${x === id}">${esc(HOJE.picos[x].n)}</button>`).join("")}</div>` : ""}`);
+      renderLocal(id);
       return;
     }
     // Sem favorito: mostra o pico mais perto de onde a pessoa está
@@ -103,6 +143,7 @@
     const [p, k] = near;
     el.innerHTML = panelHTML(p[0], `<p class="label">Pico mais perto de você${loc.city ? " · " + esc(loc.city) : ""} · ${Math.round(k)} km</p>`) +
       `<button class="go" type="button" data-fixfav="${p[0]}" style="position:relative">☆ Fixar como meu pico</button>`;
+    renderLocal(p[0]);
   }
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-fixfav]");
@@ -258,17 +299,31 @@
   const box = $("#install");
   let deferred = null;
   const dismissed = () => { const t = store.get("tr-install-no", 0); return Date.now() - t < 14 * 864e5; };
-  function showInstall() { if (box && !standalone && !dismissed()) box.hidden = false; }
+  const tag = $("#install-tag");
+  const installed = () => standalone || store.get("tr-installed", false);
+  function showInstall() {
+    if (installed() || dismissed()) return;
+    if (box) box.hidden = false;
+    if (tag) tag.hidden = false;
+  }
+  function hideInstall() { if (box) box.hidden = true; if (tag) tag.hidden = true; }
+  if (standalone) store.set("tr-installed", true);
   window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; showInstall(); });
-  window.addEventListener("appinstalled", () => { if (box) box.hidden = true; });
+  window.addEventListener("appinstalled", () => { store.set("tr-installed", true); hideInstall(); });
+  if (tag) tag.addEventListener("click", e => {
+    if (!box) return;
+    e.preventDefault();
+    box.scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "center" });
+    box.classList.add("flash"); setTimeout(() => box.classList.remove("flash"), 1600);
+  });
   if (ios && !standalone) showInstall();
   if (box) {
-    $("#install-no").addEventListener("click", () => { store.set("tr-install-no", Date.now()); box.hidden = true; });
+    $("#install-no").addEventListener("click", () => { store.set("tr-install-no", Date.now()); hideInstall(); });
     $("#install-go").addEventListener("click", async () => {
       if (deferred) {
         deferred.prompt();
         try { await deferred.userChoice; } catch (e) {}
-        deferred = null; box.hidden = true;
+        deferred = null;
       } else {
         openSheet(`${head("Instalar no iPhone", "Leva menos de 10 segundos")}
           <ol class="ios-steps">

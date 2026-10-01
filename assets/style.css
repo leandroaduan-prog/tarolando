@@ -244,3 +244,11 @@ a.card-main:hover h3{color:var(--sea)}
 .logo-mark{height:60px;width:auto}
 .logo-word{height:56px;width:auto;color:var(--ink)}
 @media (min-width:900px){.logo-mark{height:68px}.logo-word{height:62px}}
+
+/* Aviso para instalar o app */
+.install-tag{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:var(--sea);color:#fff;text-decoration:none;font-weight:700;font-size:.85rem;border-radius:999px;padding:7px 14px;box-shadow:0 4px 12px color-mix(in srgb,var(--sea) 35%,transparent)}
+.install-tag svg{animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
+@media (prefers-reduced-motion: reduce){.install-tag svg{animation:none}}
+@media (display-mode: standalone){.install-tag{display:none!important}}
+.install.flash{box-shadow:0 0 0 3px var(--accent)}

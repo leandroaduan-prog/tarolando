@@ -122,6 +122,9 @@ for (const p of all) {
     n: p.nome, c: p.cidade, uf: p.uf, u: picoPath(p),
     t: [t.from, t.to, d.bw.mx, +t.at.H.toFixed(2), t.at.per, Math.round(t.at.swDir), Math.round(t.at.dir), Math.round(t.at.spd), t.at.kind],
     bw: [d.bw.from, d.bw.to], ww: d.ww ? [d.ww.from, d.ww.to, Math.round(d.ww.dir), Math.round(d.ww.spd), d.ww.kind] : null,
+    a: [+d.bw.at.H.toFixed(2), d.bw.at.per, Math.round(d.bw.at.swDir), Math.round(d.bw.at.dir), Math.round(d.bw.at.spd), d.bw.at.kind],
+    hi: d.tide.ext.filter(x => x.t === "Alta").map(x => { const H = Math.floor(x.h), M = Math.round((x.h - H) * 60); return M === 60 ? (H + 1) + "h" : H + "h" + (M ? String(M).padStart(2, "0") : ""); }).join(" e "),
+    lv: p.nivel, fl: p.flags,
     wk: p.days.map(x => [x.bw.mx, +x.bw.at.H.toFixed(2), x.wx.sky])
   };
 }
