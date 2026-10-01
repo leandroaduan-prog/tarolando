@@ -261,3 +261,21 @@ a.card-main:hover h3{color:var(--sea)}
 .panel .week button.best{outline:2px solid var(--accent);outline-offset:1px}
 
 .your-wrap{display:grid;gap:10px;min-width:0}
+
+/* Compartilhe o app (topo) */
+.brandrow{display:flex;align-items:center;justify-content:space-between;gap:12px;flex:1 1 100%}
+.share-app{display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:var(--surface);color:var(--ink);border:2px solid var(--accent);border-radius:14px;padding:8px 12px;line-height:1.15;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 22%,transparent);flex:none}
+.share-app svg{color:var(--accent);flex:none;animation:beat 2.4s ease-in-out infinite}
+.share-app b{display:block;font-size:.88rem}
+.share-app small{display:block;font-size:.72rem;color:var(--muted)}
+@keyframes beat{0%,70%,100%{transform:scale(1)}80%{transform:scale(1.18)}90%{transform:scale(.95)}}
+@media (prefers-reduced-motion: reduce){.share-app svg{animation:none}}
+@media (min-width:900px){.brandrow{flex:0 1 auto;gap:24px}.site-head{flex-wrap:nowrap}}
+@media (max-width:899px){
+  .logo-mark{height:50px}.logo-word{height:46px}
+  .share-app{flex:0 1 auto;min-width:0;padding:7px 10px;gap:6px}
+  .share-app b{font-size:.8rem}.share-app small{font-size:.66rem}
+}
+@media (max-width:360px){.share-app small{display:none}}
+.share-app span{min-width:0}
+@media (max-width:899px){.share-app span{max-width:118px}.share-app b{font-size:.8rem}.share-app small{font-size:.66rem}}

@@ -42,7 +42,8 @@ const dates = all[0].days.map(d => d.date);
 const version = now.getTime().toString(36);
 const updatedTxt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(now) + (MOCK ? " (dados de exemplo)" : "");
 const og = {}, ogJobs = [];
-setContext({ base, siteUrl, config, dates, version, updatedTxt, og });
+const shareAppText = "O segredo da galera que sempre pega o mar bom 🤫🌊 Esse app avisa a hora certa de cair no seu pico. São mais de 200 picos de surf do Brasil, com previsão atualizada o dia todo. É grátis, mas só até a gente deixar 😅";
+setContext({ base, siteUrl, config, dates, version, updatedTxt, og, shareAppText });
 
 /* imagens de compartilhamento (WhatsApp etc.) */
 const site = siteUrl.replace(/^https?:\/\//, "");

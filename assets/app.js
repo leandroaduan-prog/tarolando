@@ -98,6 +98,15 @@
       <a class="btn share" data-share data-text="${esc(text)}" data-url="${esc(url)}" href="https://wa.me/?text=${encodeURIComponent(text + " " + url)}" target="_blank" rel="noopener">${WA}${i === 0 ? "Mandar pra galera no WhatsApp" : i === 1 ? "Mandar amanhã pra galera" : "Mandar esse dia pra galera"}</a>
     </article>`;
   }
+  function setAppShare(id) {
+    const b = $("#share-app"), p = HOJE && HOJE.picos[id];
+    if (!b || !p || b.dataset.base) return;
+    b.dataset.base = b.dataset.text;
+    const s = p.d ? p.d[0][2] : p.wk[0][0];
+    const text = b.dataset.text + ` Hoje em ${p.n}: ${COND[s][0]} (“${SAY(s)[0]}”), top moment ${hh(p.t[0])} às ${hh(p.t[1])}. Olha aí:`;
+    b.dataset.text = text;
+    b.href = "https://wa.me/?text=" + encodeURIComponent(text + " " + b.dataset.url);
+  }
   function yourCarousel(el, id, label, before, after) {
     const p = HOJE.picos[id];
     if (!p || !p.d) return false;
@@ -106,6 +115,7 @@
       <div class="dots" id="yourdots" aria-hidden="true">${p.d.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
       <p class="muted" style="margin:0;font-size:.82rem;text-align:center">Arraste para o lado para ver os próximos dias</p>${after || ""}`;
     setupCar($("#yourcar"));
+    setAppShare(id);
     const sh = $("#share-home"); if (sh) sh.hidden = true;
     return true;
   }
