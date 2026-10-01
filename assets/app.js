@@ -38,27 +38,42 @@
     store.set("tr-favs", favs);
     paintFavs();
     renderYour();
+    cacheFavs();
   });
 
   /* ---------- seu pico (página inicial) ---------- */
   let HOJE = null, sumFav = store.get("tr-sumfav", null);
-  async function renderYour() {
-    const el = $("#your");
-    if (!el || !favs.length) return;
-    try {
-      if (!HOJE) HOJE = await (await fetch(B + "/dados/hoje.json?v=" + (window.TR.v || ""))).json();
-    } catch (e) { return; }
-    const list = favs.filter(id => HOJE.picos[id]);
-    if (!list.length) return;
-    const id = list.includes(sumFav) ? sumFav : list[0], p = HOJE.picos[id];
+  async function loadHoje() {
+    if (!HOJE) HOJE = await (await fetch(B + "/dados/hoje.json?v=" + (window.TR.v || ""))).json();
+    return HOJE;
+  }
+  function kmTo(lat, lon, p) {
+    const R = 6371, t = x => (x * Math.PI) / 180, dl = t(p[4] - lat), dn = t(p[5] - lon);
+    const h = Math.sin(dl / 2) ** 2 + Math.cos(t(lat)) * Math.cos(t(p[4])) * Math.sin(dn / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(h));
+  }
+  /* Localização aproximada pelo IP (sem pedir permissão), guardada por 1 dia */
+  async function approxLocation() {
+    const saved = store.get("tr-loc", null);
+    if (saved && Date.now() - saved.t < 864e5) return saved;
+    const tries = [
+      async () => { const j = await (await fetch("https://get.geojs.io/v1/ip/geo.json")).json(); return { lat: +j.latitude, lon: +j.longitude, city: j.city || "" }; },
+      async () => { const j = await (await fetch("https://ipapi.co/json/")).json(); return { lat: +j.latitude, lon: +j.longitude, city: j.city || "" }; }
+    ];
+    for (const f of tries) {
+      try { const l = await f(); if (isFinite(l.lat) && isFinite(l.lon) && (l.lat || l.lon)) { l.t = Date.now(); l.src = "ip"; store.set("tr-loc", l); return l; } } catch (e) {}
+    }
+    return null;
+  }
+  function panelHTML(id, top) {
+    const p = HOJE.picos[id];
     const [from, to, s, H, per, sd, wd, ws, kind] = p.t;
     const mh = Math.max(1, ...p.wk.map(w => w[1]));
     let bi = 0; p.wk.forEach((w, i) => { const c = p.wk[bi]; const r = x => (x === 5 ? 0.5 : x); if (r(w[0]) > r(c[0]) || (r(w[0]) === r(c[0]) && w[1] > c[1])) bi = i; });
     const dn = i => { if (i === 0) return "Hoje"; const [y, m, d] = HOJE.datas[i].split("-").map(Number); return ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay()]; };
     const ww = p.ww ? `Vento a favor: <b>${hh(p.ww[0])} às ${hh(p.ww[1])}</b> · ${p.ww[4] === "terral" ? "terral " + c16(p.ww[2]) + " " + p.ww[3] + " km/h" : p.ww[4] === "sem vento" ? "sem vento" : "vento fraco"}` : "Sem horário de vento a favor";
     const old = HOJE.gerado && todayKey() !== HOJE.datas[0];
-    el.innerHTML = `<p class="label">Seu pico</p>
-      ${list.length > 1 ? `<div class="favsw">${list.map(x => `<button type="button" data-sumfav="${x}" aria-pressed="${x === id}">${esc(HOJE.picos[x].n)}</button>`).join("")}</div>` : ""}
+    return `${top}
       <div class="name"><a href="${B + p.u}" style="color:inherit;text-decoration:none">${esc(p.n)}</a></div>
       <div class="line soft">${esc(p.c)} · ${p.uf}</div>
       <div class="topm"><span class="tm-badge">Top moment de hoje</span><div class="tm-time">${hh(from)} às ${hh(to)}</div>
@@ -69,6 +84,33 @@
       <div class="week">${p.wk.map((w, i) => `<a href="${B + p.u}#dia-${i}" class="${i === bi ? "best" : ""}" style="display:grid;gap:3px;justify-items:center;color:inherit;text-decoration:none;padding:4px 0"><span class="h">${fmt(w[1])}</span><span class="bar" style="--sc:var(--${COND[w[0]][1]});height:${(8 + 46 * (w[1] / mh)).toFixed(0)}px"></span><span class="d">${dn(i)}</span></a>`).join("")}</div>
       ${old ? `<p class="soft" style="margin:0;position:relative;font-size:.8rem">Previsão de ${HOJE.datas[0].split("-").reverse().join("/")}. Atualize a página.</p>` : ""}`;
   }
+  async function renderYour() {
+    const el = $("#your");
+    if (!el) return;
+    try { await loadHoje(); } catch (e) { return; }
+    const list = favs.filter(id => HOJE.picos[id]);
+    if (list.length) {
+      const id = list.includes(sumFav) ? sumFav : list[0];
+      el.innerHTML = panelHTML(id, `<p class="label">Seu pico</p>
+        ${list.length > 1 ? `<div class="favsw">${list.map(x => `<button type="button" data-sumfav="${x}" aria-pressed="${x === id}">${esc(HOJE.picos[x].n)}</button>`).join("")}</div>` : ""}`);
+      return;
+    }
+    // Sem favorito: mostra o pico mais perto de onde a pessoa está
+    const loc = await approxLocation();
+    if (!loc || favs.length) return; // sem localização, fica o "melhor do Brasil"
+    const near = IDX.picos.filter(p => HOJE.picos[p[0]]).map(p => [p, kmTo(loc.lat, loc.lon, p)]).sort((a, b) => a[1] - b[1])[0];
+    if (!near) return;
+    const [p, k] = near;
+    el.innerHTML = panelHTML(p[0], `<p class="label">Pico mais perto de você${loc.city ? " · " + esc(loc.city) : ""} · ${Math.round(k)} km</p>`) +
+      `<button class="go" type="button" data-fixfav="${p[0]}" style="position:relative">☆ Fixar como meu pico</button>`;
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-fixfav]");
+    if (!b) return;
+    favs = [...new Set([...favs, b.dataset.fixfav])];
+    store.set("tr-favs", favs);
+    paintFavs(); renderYour(); cacheFavs();
+  });
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-sumfav]");
     if (!b) return;
@@ -189,7 +231,7 @@
     };
     if (!navigator.geolocation) return viaIP();
     navigator.geolocation.getCurrentPosition(
-      pos => { showNear(pos.coords.latitude, pos.coords.longitude, "você"); btn.disabled = false; lbl.textContent = "Praias perto de mim"; },
+      pos => { store.set("tr-loc", { lat: pos.coords.latitude, lon: pos.coords.longitude, city: "", t: Date.now(), src: "gps" }); showNear(pos.coords.latitude, pos.coords.longitude, "você"); btn.disabled = false; lbl.textContent = "Praias perto de mim"; },
       () => viaIP(), { timeout: 8000, maximumAge: 600000 }
     );
   }
@@ -200,7 +242,46 @@
     if (e.target.closest("#near")) return nearMe();
   });
 
+
+  /* ---------- app instalável (PWA) ---------- */
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => navigator.serviceWorker.register(B + "/sw.js", { scope: B + "/" }).catch(() => {}));
+  }
+  // guarda as páginas dos picos favoritos para abrir sem internet
+  function cacheFavs() {
+    if (!("serviceWorker" in navigator) || !navigator.onLine) return;
+    const urls = new Map(IDX.picos.map(p => [p[0], p[6]]));
+    favs.forEach(id => { const u = urls.get(id); if (u) fetch(B + u, { credentials: "same-origin" }).catch(() => {}); });
+  }
+  const standalone = matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent) && !window.MSStream;
+  const box = $("#install");
+  let deferred = null;
+  const dismissed = () => { const t = store.get("tr-install-no", 0); return Date.now() - t < 14 * 864e5; };
+  function showInstall() { if (box && !standalone && !dismissed()) box.hidden = false; }
+  window.addEventListener("beforeinstallprompt", e => { e.preventDefault(); deferred = e; showInstall(); });
+  window.addEventListener("appinstalled", () => { if (box) box.hidden = true; });
+  if (ios && !standalone) showInstall();
+  if (box) {
+    $("#install-no").addEventListener("click", () => { store.set("tr-install-no", Date.now()); box.hidden = true; });
+    $("#install-go").addEventListener("click", async () => {
+      if (deferred) {
+        deferred.prompt();
+        try { await deferred.userChoice; } catch (e) {}
+        deferred = null; box.hidden = true;
+      } else {
+        openSheet(`${head("Instalar no iPhone", "Leva menos de 10 segundos")}
+          <ol class="ios-steps">
+            <li>No Safari, toque no botão <b>Compartilhar</b> (o quadrado com a seta para cima), na barra de baixo.</li>
+            <li>Role a lista e toque em <b>Adicionar à Tela de Início</b>.</li>
+            <li>Toque em <b>Adicionar</b>. O ícone do Tá Rolando aparece junto com seus apps.</li>
+          </ol>
+          <p class="msg">Se você abriu pelo Chrome ou outro navegador no iPhone, abra o site no Safari primeiro.</p>`);
+      }
+    });
+  }
   paintFavs();
   paintCheckin();
   renderYour();
+  cacheFavs();
 })();

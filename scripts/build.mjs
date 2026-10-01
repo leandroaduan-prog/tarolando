@@ -78,7 +78,7 @@ page("/politica-de-privacidade/", textPage({ path: "/politica-de-privacidade/", 
 <h2>O que guardamos no seu aparelho</h2>
 <p>Seus picos favoritos, o passaporte do surfista e a última região escolhida ficam salvos só no seu navegador (armazenamento local). Esses dados não são enviados para nós.</p>
 <h2>Localização</h2>
-<p>Se você tocar em "Praias perto de mim", o navegador pede permissão para usar sua localização. Ela é usada só no seu aparelho para ordenar os picos por distância e não é guardada nem enviada para nós.</p>
+<p>Se você ainda não tem um pico favorito, a página inicial mostra o pico mais perto de você. Para isso, o navegador consulta o serviço GeoJS (geojs.io), que estima a cidade aproximada a partir do endereço IP, sem pedir sua localização exata. Se você tocar em "Praias perto de mim", o navegador pede permissão para usar a localização do aparelho. Nos dois casos, a localização fica salva só no seu navegador, é usada para ordenar os picos por distância e não é enviada para nós.</p>
 <h2>Publicidade e cookies de terceiros</h2>
 <p>Este site pode exibir anúncios do Google AdSense. O Google e seus parceiros usam cookies para mostrar anúncios com base em visitas anteriores a este e a outros sites. Você pode desativar a publicidade personalizada em <a href="https://adssettings.google.com/">Configurações de anúncios do Google</a> e saber mais em <a href="https://policies.google.com/technologies/ads?hl=pt-BR">Como o Google usa cookies em publicidade</a>.</p>
 <h2>Serviços de terceiros</h2>
@@ -90,7 +90,23 @@ page("/politica-de-privacidade/", textPage({ path: "/politica-de-privacidade/", 
 out("/404.html", textPage({ path: "/404.html", title: "Página não encontrada", h1: "Esse pico não existe", desc: "Página não encontrada.", html: `<p>A página que você procurou não foi encontrada. <a href="${base}/">Voltar para o início</a>.</p>` }));
 
 /* arquivos de apoio */
-for (const f of ["style.css", "app.js", "favicon.svg"]) copyFileSync(join(ROOT, "assets", f), join(DIST, f));
+for (const f of ["style.css", "app.js"]) copyFileSync(join(ROOT, "assets", f), join(DIST, f));
+/* app instalável (PWA) */
+mkdirSync(join(DIST, "icons"), { recursive: true });
+for (const f of ["icon-192.png", "icon-512.png", "apple-touch-icon.png", "logo-mark.png"]) copyFileSync(join(ROOT, "assets", "icons", f), join(DIST, "icons", f));
+writeFileSync(join(DIST, "manifest.webmanifest"), JSON.stringify({
+  name: "Tá Rolando? · Previsão de surf", short_name: "Tá Rolando", lang: "pt-BR",
+  description: "Previsão de surf fácil para os picos do Brasil: ondas, vento, maré e o melhor horário para cair.",
+  id: base + "/", start_url: base + "/?app=1", scope: base + "/", display: "standalone", orientation: "portrait",
+  background_color: "#EAF1F0", theme_color: "#0F2733", categories: ["sports", "weather"],
+  icons: [
+    { src: base + "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+    { src: base + "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+    { src: base + "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" }
+  ]
+}, null, 2));
+writeFileSync(join(DIST, "sw.js"), readFileSync(join(ROOT, "assets", "sw.js"), "utf8").replace("__VERSION__", version).replaceAll("__BASE__", base));
+out("/offline/", textPage({ path: "/offline/", title: "Sem internet", h1: "Sem internet", desc: "Você está sem conexão.", html: `<p>Parece que você está sem conexão. As páginas que você já abriu e os seus picos favoritos continuam disponíveis com a última previsão salva.</p><p><a href="${base}/">Voltar para o início</a></p>` }));
 writeFileSync(join(DIST, ".nojekyll"), "");
 const ufs = Object.keys(UFN).filter(uf => all.some(p => p.uf === uf)).map(uf => {
   const list = all.filter(p => p.uf === uf);

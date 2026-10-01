@@ -185,17 +185,26 @@ export function layout({ title, desc, path, body, jsonld = [], crumbs = [] }) {
 <link rel="canonical" href="${esc(url)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Tá Rolando?"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(url)}"><meta property="og:locale" content="pt_BR">
 <meta name="theme-color" content="#0F2733">
-<link rel="icon" href="${u("/favicon.svg")}" type="image/svg+xml">
+<link rel="icon" href="${u("/icons/icon-192.png")}" type="image/png">
+<link rel="manifest" href="${u("/manifest.webmanifest")}">
+<link rel="apple-touch-icon" href="${u("/icons/apple-touch-icon.png")}">
+<meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tá Rolando"><meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="${u("/style.css?v=" + C.version)}">
 ${ads}${ld}
 </head><body><div class="wrap">
-<header class="site-head"><a class="home" href="${u("/")}" aria-label="Tá Rolando? página inicial">${LOGO}</a>
-<button class="place" id="place" type="button" aria-label="Escolher praia"><span class="pin"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="10" r="2.6" fill="currentColor"/></svg></span><span><b>Escolher praia</b><small>Estado, cidade ou perto de mim</small></span><span class="chev">Abrir</span></button>
+<header class="site-head"><a class="home" href="${u("/")}" aria-label="Tá Rolando? página inicial"><img class="logo-mark" src="${u("/icons/logo-mark.png")}" alt="" width="58" height="52">${LOGO}</a>
+<button class="place" id="place" type="button" aria-label="Escolha seu pico"><span class="pin"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="12" cy="10" r="2.6" fill="currentColor"/></svg></span><span class="place-txt"><b>Escolha seu pico</b><small>Por estado, cidade ou perto de você</small></span><span class="chev" aria-hidden="true">›</span></button>
 </header>
 ${crumbs.length > 1 ? `<nav aria-label="Você está em"><ol class="crumbs">${crumbs.map((c, i) => `<li>${i === crumbs.length - 1 ? esc(c[0]) : `<a href="${u(c[1])}">${esc(c[0])}</a>`}</li>`).join("")}</ol></nav>` : ""}
 ${body}
+<section class="install" id="install" hidden>
+  <img src="${u("/icons/icon-192.png")}" alt="" width="48" height="48">
+  <div><b>Leve o Tá Rolando no celular</b><small>Instale o app: abre em tela cheia e mostra a última previsão mesmo sem internet.</small></div>
+  <div class="install-btns"><button class="btn primary" type="button" id="install-go">Instalar</button><button class="btn" type="button" id="install-no" aria-label="Agora não">Agora não</button></div>
+</section>
 <footer class="foot">
 <nav><a href="${u("/")}">Início</a><a href="${u("/sobre/")}">Sobre</a><a href="${u("/politica-de-privacidade/")}">Política de privacidade</a><a href="${u("/contato/")}">Contato</a></nav>
 <p style="margin:0">Previsão de ondas, vento e tempo: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0). A maré vem de modelo numérico e é aproximada: não use para navegação. Coordenadas dos picos aproximadas.</p>

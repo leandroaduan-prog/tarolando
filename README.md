@@ -68,6 +68,14 @@ A API grátis da Open-Meteo só pode ser usada sem anúncios. Antes de ligar o A
 
 Toda alteração enviada pelo GitHub Desktop (Commit + Push) publica o site de novo.
 
+## App instalável (PWA)
+
+O site também funciona como app:
+- **Android (Chrome):** aparece o aviso "Leve o Tá Rolando no celular" com o botão **Instalar**.
+- **iPhone (Safari):** botão Compartilhar › **Adicionar à Tela de Início**. O site mostra esse passo a passo quando a pessoa toca em Instalar.
+- Sem internet, abre a última previsão salva da página inicial e dos picos favoritos.
+- Ícones em `assets/icons/`. O funcionamento offline está em `assets/sw.js`.
+
 ## Testar no computador (opcional)
 
 Precisa do [Node.js 20+](https://nodejs.org).
