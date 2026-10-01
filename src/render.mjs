@@ -172,6 +172,10 @@ function poroCard(p) {
 }
 
 /* ---------- layout ---------- */
+export function shareBtn(text, path) {
+  const url = C.siteUrl + path;
+  return `<a class="btn share" data-share data-text="${esc(text)}" data-url="${esc(url)}" href="https://wa.me/?text=${encodeURIComponent(text + " " + url)}" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2-1.4-2.4-2.4l.9-1-1-2L9 8.5z" fill="currentColor"/></svg>Mandar pra galera no WhatsApp</a>`;
+}
 export function layout({ title, desc, path, body, jsonld = [], crumbs = [] }) {
   const url = C.siteUrl + path;
   const ads = C.config.ads.enabled && C.config.ads.client ? `<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${esc(C.config.ads.client)}" crossorigin="anonymous"></script>` : "";
@@ -184,6 +188,7 @@ export function layout({ title, desc, path, body, jsonld = [], crumbs = [] }) {
 <meta name="description" content="${esc(desc)}">
 <link rel="canonical" href="${esc(url)}">
 <meta property="og:type" content="website"><meta property="og:site_name" content="Tá Rolando?"><meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:url" content="${esc(url)}"><meta property="og:locale" content="pt_BR">
+${(() => { const img = C.og && (C.og[path] || C.og["/"]); return img ? `<meta property="og:image" content="${esc(C.siteUrl + img + "?v=" + C.version)}"><meta property="og:image:type" content="image/jpeg"><meta property="og:image:width" content="1200"><meta property="og:image:height" content="630"><meta property="og:image:alt" content="${esc(title)}"><meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="${esc(C.siteUrl + img + "?v=" + C.version)}">` : ""; })()}
 <meta name="theme-color" content="#0F2733">
 <link rel="icon" href="${u("/icons/icon-192.png")}" type="image/png">
 <link rel="manifest" href="${u("/manifest.webmanifest")}">
@@ -242,6 +247,7 @@ export function homePage(all) {
       <p class="label" style="margin:6px 0 0">Como ler a nota</p>${legend()}
     </div>
   </section>
+  ${shareBtn("Tá Rolando? Previsão de surf fácil para os picos do Brasil, com o melhor horário pra cair:", "/")}
   <section id="local" hidden></section>
   ${adSlot("home")}
   <section><h2 class="section-title">Hoje em cada estado</h2><ul class="list">${perUf.map(x => card(x.b.p)).join("")}</ul></section>
@@ -356,6 +362,7 @@ export function picoPage(p, near) {
       <p class="label" style="margin:6px 0 0">Como ler a nota</p>${legend()}
     </div>
   </section>
+  ${shareBtn(`Tá rolando em ${p.nome}? Hoje: ${COND[d0.bw.mx][0]} (“${say(d0.bw.mx)[0]}”), top moment ${hhmm(tm.from)} às ${hhmm(tm.to)}. Olha a previsão:`, picoPath(p))}
   <div class="daytabs" id="daytabs">${p.days.map((d, i) => `<button class="chip" type="button" data-day="${i}" aria-pressed="${i === 0}">${dayName(d.date, i)} ${d.date.slice(8, 10)}</button>`).join("")}</div>
   ${p.days.map(daySection).join("")}
   ${adSlot("pico")}

@@ -76,6 +76,10 @@ O site também funciona como app:
 - Sem internet, abre a última previsão salva da página inicial e dos picos favoritos.
 - Ícones em `assets/icons/`. O funcionamento offline está em `assets/sw.js`.
 
+## Imagem no WhatsApp
+
+Cada página tem uma imagem de prévia (1200×630) com a previsão do dia, gerada por `scripts/og.py` a cada atualização. Ela aparece quando alguém compartilha o link no WhatsApp, Instagram, Facebook etc. Fontes em `assets/fonts` (licença OFL).
+
 ## Testar no computador (opcional)
 
 Precisa do [Node.js 20+](https://nodejs.org).
@@ -83,6 +87,7 @@ Precisa do [Node.js 20+](https://nodejs.org).
 ```bash
 node scripts/build.mjs --mock   # gera com dados de exemplo, sem internet
 node scripts/build.mjs          # gera com a previsão real
+python3 scripts/og.py           # gera as imagens de compartilhamento (precisa do Pillow)
 npx serve dist                  # abre em http://localhost:3000
 ```
 

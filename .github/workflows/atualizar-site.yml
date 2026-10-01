@@ -33,6 +33,13 @@ jobs:
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
           SITE_URL: ${{ steps.pages.outputs.base_url }}
           OPEN_METEO_API_KEY: ${{ secrets.OPEN_METEO_API_KEY }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Gerar imagens de compartilhamento (WhatsApp)
+        run: |
+          pip install --quiet pillow
+          python scripts/og.py
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

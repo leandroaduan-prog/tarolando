@@ -5,7 +5,9 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PICOS, UFN } from "../src/picos.mjs";
 import { fetchAll, mockAll, process as proc } from "../src/forecast.mjs";
-import { setContext, homePage, statePage, cityPage, picoPage, textPage, picoPath, cityPath, ufPath, bestOf, esc } from "../src/render.mjs";
+import { setContext, homePage, statePage, cityPage, picoPage, textPage, picoPath, cityPath, ufPath, bestOf, esc, dayShort } from "../src/render.mjs";
+import { COND, say, hhmm, fmt, card16, windTxt } from "../src/rating.mjs";
+import { moonInfo } from "../src/moon.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
@@ -39,7 +41,44 @@ const all = raw.map(proc);
 const dates = all[0].days.map(d => d.date);
 const version = now.getTime().toString(36);
 const updatedTxt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(now) + (MOCK ? " (dados de exemplo)" : "");
-setContext({ base, siteUrl, config, dates, version, updatedTxt });
+const og = {}, ogJobs = [];
+setContext({ base, siteUrl, config, dates, version, updatedTxt, og });
+
+/* imagens de compartilhamento (WhatsApp etc.) */
+const site = siteUrl.replace(/^https?:\/\//, "");
+const okWaves = l => l.filter(p => !p.poro && !p.noWaves);
+function ogJob(path, label, b, extra = {}) {
+  const file = "/og" + (path === "/" ? "/inicio" : path.replace(/\/$/, "")) + ".jpg";
+  og[path] = file;
+  if (!b) { ogJobs.push({ file, label, site, ...extra }); return; }
+  const d = b.d, t = d.top, s = d.bw.mx;
+  ogJobs.push({
+    file, label, site, name: b.p.nome, sub: `${b.p.cidade} · ${b.p.uf}`,
+    cond: COND[s][0], color: COND[s][1], say: say(s)[0], bad: s === 5,
+    badge: "Top moment de hoje",
+    line: `${hhmm(t.from)} às ${hhmm(t.to)} · ${fmt(t.at.H)} m · ${t.at.per}s · ${t.at.kind === "sem vento" ? "sem vento" : "vento " + t.at.kind}`,
+    bars: b.p.days.map((x, i) => [COND[x.bw.mx][1], x.bw.at.H, dayShort(x.date, i)]),
+    ...extra
+  });
+}
+ogJob("/", "Onde tá melhor hoje", bestOf(okWaves(all), 0));
+for (const uf of Object.keys(UFN)) {
+  const list = all.filter(p => p.uf === uf);
+  if (!list.length) continue;
+  ogJob(ufPath(uf), `Hoje em ${uf}`, bestOf(okWaves(list), 0));
+  for (const c of [...new Set(list.map(p => p.cidade))]) {
+    const cl = list.filter(p => p.cidade === c);
+    const b = bestOf(okWaves(cl), 0);
+    ogJob(cityPath(cl[0]), `Hoje em ${c}`.slice(0, 34), b, b ? {} : { name: cl[0].nome, sub: `${c} · ${uf}`, line: "Previsão de pororoca pela lua" });
+  }
+}
+for (const p of all) {
+  if (p.poro) {
+    const m = moonInfo(new Date(dates[0] + "T12:00:00Z"));
+    ogJob(picoPath(p), "Previsão de pororoca", null, { name: p.nome, sub: `${p.cidade} · ${p.uf}`, cond: m.spring ? "Pode rolar" : "Fraca", color: m.spring ? "s3" : "s0", line: `Hoje: ${m.name}` });
+  } else if (p.noWaves) ogJob(picoPath(p), "Previsão de surf", null, { name: p.nome, sub: `${p.cidade} · ${p.uf}` });
+  else ogJob(picoPath(p), "Previsão de surf", { p, d: p.days[0] });
+}
 
 rmSync(DIST, { recursive: true, force: true });
 mkdirSync(DIST, { recursive: true });
@@ -131,6 +170,7 @@ for (const p of all) {
 mkdirSync(join(DIST, "dados"), { recursive: true });
 writeFileSync(join(DIST, "dados", "hoje.json"), JSON.stringify({ gerado: now.toISOString(), datas: dates, picos: hoje }));
 const lastmod = spDate(now);
+writeFileSync(join(DIST, "og-jobs.json"), JSON.stringify(ogJobs));
 writeFileSync(join(DIST, "sitemap.xml"), `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map(p => `<url><loc>${siteUrl}${p}</loc><lastmod>${lastmod}</lastmod><changefreq>hourly</changefreq></url>`).join("\n")}\n</urlset>\n`);
 writeFileSync(join(DIST, "robots.txt"), `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`);
 if (config.ads.enabled && config.ads.client) writeFileSync(join(DIST, "ads.txt"), `google.com, ${config.ads.client.replace("ca-", "")}, DIRECT, f08c47fec0942fa0\n`);

@@ -335,6 +335,13 @@
       }
     });
   }
+  /* ---------- compartilhar (abre o menu do celular; senão, WhatsApp) ---------- */
+  document.addEventListener("click", e => {
+    const a = e.target.closest("[data-share]");
+    if (!a || !navigator.share) return;
+    e.preventDefault();
+    navigator.share({ title: document.title, text: a.dataset.text, url: a.dataset.url }).catch(() => {});
+  });
   paintFavs();
   paintCheckin();
   renderYour();

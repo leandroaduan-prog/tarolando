@@ -252,3 +252,7 @@ a.card-main:hover h3{color:var(--sea)}
 @media (prefers-reduced-motion: reduce){.install-tag svg{animation:none}}
 @media (display-mode: standalone){.install-tag{display:none!important}}
 .install.flash{box-shadow:0 0 0 3px var(--accent)}
+
+/* Compartilhar */
+.btn.share{background:#1FA855;border-color:#1FA855;color:#fff;font-weight:700;justify-self:start;align-self:flex-start;padding:12px 18px;font-size:.95rem;width:fit-content}
+.btn.share:hover{filter:brightness(1.05)}
