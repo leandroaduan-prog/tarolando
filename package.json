@@ -1,0 +1,13 @@
+{
+  "name": "tarolando",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Tá Rolando? — previsão de surf para os picos do Brasil",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "exemplo": "node scripts/build.mjs --mock",
+    "ver": "npx --yes serve dist"
+  }
+}

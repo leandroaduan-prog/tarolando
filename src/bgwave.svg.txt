@@ -1,0 +1,7 @@
+<svg class="bgwave" viewBox="0 0 200 200" aria-hidden="true">
+  <path fill="none" stroke="currentColor" stroke-width="12" stroke-linecap="round" d="M14 184 L186 184"/>
+  <circle cx="138" cy="142" r="19" fill="var(--accent)"/>
+  <path fill="none" stroke="currentColor" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"
+        d="M18 166 C 58 166 56 64 124 46 C 174 33 198 82 176 108 C 160 126 132 116 136 96"/>
+  <path fill="none" stroke="currentColor" stroke-width="13" stroke-linecap="round" d="M50 166 C 76 160 80 96 120 82"/>
+  <path fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round" d="M78 166 C 92 156 96 126 112 114"/></svg>

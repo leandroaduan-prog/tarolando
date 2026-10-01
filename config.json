@@ -1,0 +1,10 @@
+{
+  "siteUrl": "https://tarolandosurf.com.br",
+  "basePath": "",
+  "contactEmail": "contato@tarolandosurf.com.br",
+  "ads": {
+    "enabled": false,
+    "client": "",
+    "slots": { "home": "", "lista": "", "pico": "" }
+  }
+}
