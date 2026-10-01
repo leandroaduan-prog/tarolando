@@ -136,8 +136,8 @@ function carousel(list, label) {
       ${BGWAVE}</article>`;
   });
   const tabs = ["Resumo", ...C.dates.map((d, i) => dayName(d, i) + " " + d.slice(8, 10))];
-  return `<div class="scroller" id="tabs">${tabs.map((t, i) => `<button class="chip" type="button" data-go="${i}" aria-pressed="${i === 0}">${t}</button>`).join("")}</div>
-    <div class="carousel" id="carousel">${sum}${days.join("")}</div>
+  return `<div class="scroller" id="tabs" data-car="carousel">${tabs.map((t, i) => `<button class="chip" type="button" data-go="${i}" aria-pressed="${i === 0}">${t}</button>`).join("")}</div>
+    <div class="carousel" id="carousel" data-dots="dots">${sum}${days.join("")}</div>
     <div class="dots" id="dots" aria-hidden="true">${tabs.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>`;
 }
 
@@ -172,9 +172,9 @@ function poroCard(p) {
 }
 
 /* ---------- layout ---------- */
-export function shareBtn(text, path) {
+export function shareBtn(text, path, id, label) {
   const url = C.siteUrl + path;
-  return `<a class="btn share" data-share data-text="${esc(text)}" data-url="${esc(url)}" href="https://wa.me/?text=${encodeURIComponent(text + " " + url)}" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2-1.4-2.4-2.4l.9-1-1-2L9 8.5z" fill="currentColor"/></svg>Mandar pra galera no WhatsApp</a>`;
+  return `<a class="btn share"${id ? ` id="${id}"` : ""} data-share data-text="${esc(text)}" data-url="${esc(url)}" href="https://wa.me/?text=${encodeURIComponent(text + " " + url)}" target="_blank" rel="noopener"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2-1.4-2.4-2.4l.9-1-1-2L9 8.5z" fill="currentColor"/></svg>${label || "Mandar pra galera no WhatsApp"}</a>`;
 }
 export function layout({ title, desc, path, body, jsonld = [], crumbs = [] }) {
   const url = C.siteUrl + path;
@@ -240,14 +240,13 @@ export function homePage(all) {
   </article>`;
   const body = `
   <section class="layout2">
-    <div style="display:grid;gap:10px;min-width:0">${yourDefault}</div>
+    <div style="display:grid;gap:10px;min-width:0">${yourDefault}${shareBtn(`Tá rolando em ${top.p.nome}? Hoje: ${COND[d.bw.mx][0]} (“${say(d.bw.mx)[0]}”), top moment ${hhmm(tm.from)} às ${hhmm(tm.to)}. Olha a previsão:`, "/", "share-home")}</div>
     <div style="display:grid;gap:10px;min-width:0;align-content:start">
       <h1 class="page">Previsão de surf no Brasil</h1>
       <p class="lead">Ondas, vento, maré e tempo para ${ws.length} picos do litoral brasileiro, de hoje até os próximos 7 dias. Cada pico ganha uma nota fácil de ler e o melhor horário para cair.</p>
       <p class="label" style="margin:6px 0 0">Como ler a nota</p>${legend()}
     </div>
   </section>
-  ${shareBtn("Tá Rolando? Previsão de surf fácil para os picos do Brasil, com o melhor horário pra cair:", "/")}
   <section id="local" hidden></section>
   ${adSlot("home")}
   <section><h2 class="section-title">Hoje em cada estado</h2><ul class="list">${perUf.map(x => card(x.b.p)).join("")}</ul></section>
@@ -302,6 +301,25 @@ export function cityPage(list) {
   });
 }
 
+const ofDay = i => (i === 0 ? "de hoje" : i === 1 ? "de amanhã" : "do dia");
+export function dayShareText(nome, d, i) {
+  const t = d.top, s = d.bw.mx, quando = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : `${dayLong(d.date, i)} (${ddmm(d.date)})`;
+  return `${quando} em ${nome}: ${COND[s][0]} (“${say(s)[0]}”), top moment ${hhmm(t.from)} às ${hhmm(t.to)}, ${fmt(t.at.H)} m. Bora?`;
+}
+function picoDayPanel(p, d, i) {
+  const t = d.top, s = d.bw.mx, hi = d.tide.ext.filter(x => x.t === "Alta").map(x => hhmm(x.h)).join(" e ");
+  const mh = Math.max(1, ...p.days.map(x => x.bw.at.H));
+  return `<article class="panel sum" aria-label="${dayLong(d.date, i)} ${ddmm(d.date)}">
+    <div class="row" style="justify-content:space-between;position:relative"><p class="label">${dayLong(d.date, i)} · ${ddmm(d.date)}</p><div class="wx" style="font-size:.85rem">${wxIcon(d.wx.sky, 24)}<span>${Math.round(d.wx.tmax)}° · chuva ${d.wx.rain ?? 0}%</span></div></div>
+    <div class="topm"><span class="tm-badge">Top moment ${ofDay(i)}</span><div class="tm-time">${hhmm(t.from)} às ${hhmm(t.to)}</div>
+      <div class="line">${pill(s)}${sayHTML(s)}</div>
+      <div class="line soft">${fmt(t.at.H)} m · ${t.at.per}s de ${card16(t.at.swDir)} · ${windPh(t.at)}</div>
+      ${d.bw.to - d.bw.from > 3 ? `<div class="soft" style="font-size:.85rem;position:relative">Janela boa no dia: ${hhmm(d.bw.from)} às ${hhmm(d.bw.to)}${hi ? ` · maré alta ${hi}` : ""}</div>` : hi ? `<div class="soft" style="font-size:.85rem;position:relative">Maré alta ${hi}</div>` : ""}</div>
+    <div class="windok">${windWinTxt(d.ww)}</div>
+    <div class="week">${p.days.map((x, k) => `<button type="button" data-go="${k}" class="${k === i ? "best" : ""}" aria-label="${dayLong(x.date, k)}"><span class="h">${fmt(x.bw.at.H)}</span><span class="bar" style="--sc:${color(x.bw.mx)};height:${(8 + 40 * (x.bw.at.H / mh)).toFixed(0)}px"></span><span class="d">${dayShort(x.date, k)}</span></button>`).join("")}</div>
+    ${shareBtn(dayShareText(p.nome, d, i), picoPath(p) + "#dia-" + i, null, i === 0 ? "Mandar pra galera no WhatsApp" : `Mandar ${i === 1 ? "amanhã" : "esse dia"} pra galera`)}
+  </article>`;
+}
 export function picoPage(p, near) {
   const crumbs = [["Início", "/"], [UFN[p.uf], ufPath(p.uf)], [p.cidade, cityPath(p)], [p.nome, picoPath(p)]];
   const place = { "@context": "https://schema.org", "@type": p.poro ? "Place" : "Beach", name: p.nome, address: { "@type": "PostalAddress", addressLocality: p.cidade, addressRegion: p.uf, addressCountry: "BR" }, geo: { "@type": "GeoCoordinates", latitude: p.lat, longitude: p.lon } };
@@ -348,22 +366,16 @@ export function picoPage(p, near) {
   const body = `${head}
   <section class="layout2">
     <div style="display:grid;gap:10px;min-width:0">
-      <article class="panel sum">
-        <div class="topm"><span class="tm-badge">Top moment de hoje</span><div class="tm-time">${hhmm(tm.from)} às ${hhmm(tm.to)}</div>
-          <div class="line">${pill(d0.bw.mx)}${sayHTML(d0.bw.mx)}</div>
-          <div class="line soft">${fmt(tm.at.H)} m · ${tm.at.per}s de ${card16(tm.at.swDir)} · ${windPh(tm.at)}</div>
-          ${d0.bw.to - d0.bw.from > 3 ? `<div class="soft" style="font-size:.85rem;position:relative">Janela boa no dia: ${hhmm(d0.bw.from)} às ${hhmm(d0.bw.to)}</div>` : ""}</div>
-        <div class="windok">${windWinTxt(d0.ww)}</div>
-        <div class="week">${weekBars(p, { go: true, icons: true, h: 46, best: -1 })}</div>
-      </article>
+      <div class="carousel" id="daycar" data-dots="daydots" data-days="1">${p.days.map((d, i) => picoDayPanel(p, d, i)).join("")}</div>
+      <div class="dots" id="daydots" aria-hidden="true">${p.days.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
+      <p class="muted" style="margin:0;font-size:.82rem;text-align:center">Arraste para o lado para ver os próximos dias</p>
     </div>
     <div style="display:grid;gap:10px;min-width:0;align-content:start">
       <p class="lead" style="margin:0">Previsão de surf em ${esc(p.nome)}, ${esc(p.cidade)} (${p.uf}): ondas, vento, maré e tempo para hoje e os próximos 7 dias. Hoje: ${COND[d0.bw.mx][0].toLowerCase()}, ${fmt(d0.bw.at.H)} m com ${d0.bw.at.per}s de período.</p>
       <p class="label" style="margin:6px 0 0">Como ler a nota</p>${legend()}
     </div>
   </section>
-  ${shareBtn(`Tá rolando em ${p.nome}? Hoje: ${COND[d0.bw.mx][0]} (“${say(d0.bw.mx)[0]}”), top moment ${hhmm(tm.from)} às ${hhmm(tm.to)}. Olha a previsão:`, picoPath(p))}
-  <div class="daytabs" id="daytabs">${p.days.map((d, i) => `<button class="chip" type="button" data-day="${i}" aria-pressed="${i === 0}">${dayName(d.date, i)} ${d.date.slice(8, 10)}</button>`).join("")}</div>
+  <div class="daytabs" id="daytabs" data-car="daycar">${p.days.map((d, i) => `<button class="chip" type="button" data-go="${i}" aria-pressed="${i === 0}">${dayName(d.date, i)} ${d.date.slice(8, 10)}</button>`).join("")}</div>
   ${p.days.map(daySection).join("")}
   ${adSlot("pico")}
   ${links}${ficha}${checkin}${nearHTML}`;

@@ -113,6 +113,28 @@ export function sky(code) {
   return "chuva";
 }
 
+/* Remove "falsas" marés (oscilações pequenas do modelo): alterna alta/baixa,
+   exige diferença mínima de altura e pelo menos 3h entre uma e outra */
+function cleanExt(ext) {
+  let out = [...ext];
+  for (let pass = 0; pass < 6; pass++) {
+    const merged = [];
+    for (const e of out) {
+      const last = merged[merged.length - 1];
+      if (last && last.t === e.t) {
+        if ((e.t === "Alta" && e.v > last.v) || (e.t === "Baixa" && e.v < last.v)) merged[merged.length - 1] = e;
+      } else merged.push(e);
+    }
+    let removed = false;
+    for (let i = 0; i < merged.length - 1; i++) {
+      const a = merged[i], b = merged[i + 1];
+      if (Math.abs(a.v - b.v) < 0.12 || b.h - a.h < 3) { merged.splice(i, 2); removed = true; break; }
+    }
+    out = merged;
+    if (!removed) break;
+  }
+  return out;
+}
 function tideFor(levels) {
   // levels: 25 valores (0h..24h)
   const pts = levels.map((v, h) => ({ h, v })).filter(x => x.v != null);
@@ -125,7 +147,7 @@ function tideFor(levels) {
     if (b > a && b >= c) ext.push({ h: i + off, v, t: "Alta" });
     if (b < a && b <= c) ext.push({ h: i + off, v, t: "Baixa" });
   }
-  return { pts, ext };
+  return { pts, ext: cleanExt(ext) };
 }
 
 export function process(raw) {

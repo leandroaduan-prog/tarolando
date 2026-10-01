@@ -164,6 +164,12 @@ for (const p of all) {
     a: [+d.bw.at.H.toFixed(2), d.bw.at.per, Math.round(d.bw.at.swDir), Math.round(d.bw.at.dir), Math.round(d.bw.at.spd), d.bw.at.kind],
     hi: d.tide.ext.filter(x => x.t === "Alta").map(x => { const H = Math.floor(x.h), M = Math.round((x.h - H) * 60); return M === 60 ? (H + 1) + "h" : H + "h" + (M ? String(M).padStart(2, "0") : ""); }).join(" e "),
     lv: p.nivel, fl: p.flags,
+    d: p.days.map(x => {
+      const t = x.top, w = x.ww;
+      const hi = x.tide.ext.filter(e => e.t === "Alta").map(e => { const H = Math.floor(e.h), M = Math.round((e.h - H) * 60); return M === 60 ? (H + 1) + "h" : H + "h" + (M ? String(M).padStart(2, "0") : ""); }).join(" e ");
+      return [t.from, t.to, x.bw.mx, +t.at.H.toFixed(2), t.at.per, Math.round(t.at.swDir), Math.round(t.at.dir), Math.round(t.at.spd), t.at.kind,
+        x.bw.from, x.bw.to, w ? [w.from, w.to, Math.round(w.dir), Math.round(w.spd), w.kind] : null, x.wx.sky, Math.round(x.wx.tmax), x.wx.rain ?? 0, hi];
+    }),
     wk: p.days.map(x => [x.bw.mx, +x.bw.at.H.toFixed(2), x.wx.sky])
   };
 }

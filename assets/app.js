@@ -65,25 +65,51 @@
     }
     return null;
   }
-  function panelHTML(id, top) {
-    const p = HOJE.picos[id];
-    const [from, to, s, H, per, sd, wd, ws, kind] = p.t;
-    const mh = Math.max(1, ...p.wk.map(w => w[1]));
-    let bi = 0; p.wk.forEach((w, i) => { const c = p.wk[bi]; const r = x => (x === 5 ? 0.5 : x); if (r(w[0]) > r(c[0]) || (r(w[0]) === r(c[0]) && w[1] > c[1])) bi = i; });
-    const dn = i => { if (i === 0) return "Hoje"; const [y, m, d] = HOJE.datas[i].split("-").map(Number); return ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay()]; };
-    const ww = p.ww ? `Vento a favor: <b>${hh(p.ww[0])} às ${hh(p.ww[1])}</b> · ${p.ww[4] === "terral" ? "terral " + c16(p.ww[2]) + " " + p.ww[3] + " km/h" : p.ww[4] === "sem vento" ? "sem vento" : "vento fraco"}` : "Sem horário de vento a favor";
-    const old = HOJE.gerado && todayKey() !== HOJE.datas[0];
-    return `${top}
-      <div class="name"><a href="${B + p.u}" style="color:inherit;text-decoration:none">${esc(p.n)}</a></div>
+  const WDS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"], WDL = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+  const dDate = i => { const [y, m, d] = HOJE.datas[i].split("-").map(Number); return new Date(Date.UTC(y, m - 1, d, 12)); };
+  const dShort = i => (i === 0 ? "Hoje" : WDS[dDate(i).getUTCDay()]);
+  const dLong = i => (i === 0 ? "Hoje" : i === 1 ? "Amanhã" : WDL[dDate(i).getUTCDay()]);
+  const ddmm = i => HOJE.datas[i].slice(8, 10) + "/" + HOJE.datas[i].slice(5, 7);
+  function wxIcon(sky) {
+    const sun = `<circle cx="16" cy="16" r="6" fill="#F2B233"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<line x1="16" y1="5" x2="16" y2="8" stroke="#F2B233" stroke-width="2" stroke-linecap="round" transform="rotate(${a} 16 16)"/>`).join("")}`;
+    const cloud = (x, y, c) => `<path d="M${x} ${y}h14a5 5 0 0 0 0-10 7 7 0 0 0-13-1 5 5 0 0 0-1 11z" fill="${c}"/>`;
+    const g = sky === "sol" ? sun : sky === "parcial" ? `<g transform="translate(-4 -4)">${sun}</g>${cloud(9, 26, "#C9D6DB")}` : sky === "nublado" ? cloud(6, 22, "#9FB2BA") + cloud(10, 27, "#C9D6DB") : cloud(7, 20, "#9FB2BA") + `<path d="M11 24l-2 5M17 24l-2 5M23 24l-2 5" stroke="#4F9FCF" stroke-width="2" stroke-linecap="round"/>`;
+    return `<svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" style="vertical-align:middle">${g}</svg>`;
+  }
+  const WA = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2-1.4-2.4-2.4l.9-1-1-2L9 8.5z" fill="currentColor"/></svg>';
+  function dayPanel(id, i, label) {
+    const p = HOJE.picos[id], x = p.d[i];
+    const [from, to, s, H, per, sd, wd, ws, kind, bf, bt, w, sky, tmax, rain, hi] = x;
+    const mh = Math.max(1, ...p.d.map(y => y[3]));
+    const ww = w ? `Vento a favor: <b>${hh(w[0])} às ${hh(w[1])}</b> · ${w[4] === "terral" ? "terral " + c16(w[2]) + " " + w[3] + " km/h" : w[4] === "sem vento" ? "sem vento" : "vento fraco"}` : "Sem horário de vento a favor";
+    const quando = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : `${dLong(i)} (${ddmm(i)})`;
+    const text = `${quando} em ${p.n}: ${COND[s][0]} (“${SAY(s)[0]}”), top moment ${hh(from)} às ${hh(to)}, ${fmt(H)} m. Bora?`;
+    const url = location.origin + B + p.u + "#dia-" + i;
+    return `<article class="panel sum">
+      <div class="row" style="justify-content:space-between;position:relative"><p class="label">${label} · ${dLong(i)} ${ddmm(i)}</p><span class="soft" style="font-size:.85rem;display:inline-flex;align-items:center;gap:6px">${wxIcon(sky)} ${tmax}° · chuva ${rain}%</span></div>
+      <div class="name"><a href="${B + p.u}#dia-${i}" style="color:inherit;text-decoration:none">${esc(p.n)}</a></div>
       <div class="line soft">${esc(p.c)} · ${p.uf}</div>
-      <div class="topm"><span class="tm-badge">Top moment de hoje</span><div class="tm-time">${hh(from)} às ${hh(to)}</div>
+      <div class="topm"><span class="tm-badge">Top moment ${i === 0 ? "de hoje" : i === 1 ? "de amanhã" : "do dia"}</span><div class="tm-time">${hh(from)} às ${hh(to)}</div>
         <div class="line">${pill(s)}${sayH(s)}</div>
         <div class="line soft">${fmt(H)} m · ${per}s de ${c16(sd)} · ${kind === "sem vento" ? "sem vento" : "vento " + ws + " km/h " + c16(wd) + " (" + kind + ")"}</div>
-        ${p.bw[1] - p.bw[0] > 3 ? `<div class="soft" style="font-size:.85rem;position:relative">Janela boa no dia: ${hh(p.bw[0])} às ${hh(p.bw[1])}</div>` : ""}</div>
+        ${bt - bf > 3 || hi ? `<div class="soft" style="font-size:.85rem;position:relative">${bt - bf > 3 ? `Janela boa no dia: ${hh(bf)} às ${hh(bt)}` : ""}${bt - bf > 3 && hi ? " · " : ""}${hi ? "maré alta " + hi : ""}</div>` : ""}</div>
       <div class="windok">${ww}</div>
-      <div class="week">${p.wk.map((w, i) => `<a href="${B + p.u}#dia-${i}" class="${i === bi ? "best" : ""}" style="display:grid;gap:3px;justify-items:center;color:inherit;text-decoration:none;padding:4px 0"><span class="h">${fmt(w[1])}</span><span class="bar" style="--sc:var(--${COND[w[0]][1]});height:${(8 + 46 * (w[1] / mh)).toFixed(0)}px"></span><span class="d">${dn(i)}</span></a>`).join("")}</div>
-      ${old ? `<p class="soft" style="margin:0;position:relative;font-size:.8rem">Previsão de ${HOJE.datas[0].split("-").reverse().join("/")}. Atualize a página.</p>` : ""}`;
+      <div class="week">${p.d.map((y, k) => `<button type="button" data-go="${k}" class="${k === i ? "best" : ""}" aria-label="${dLong(k)}"><span class="h">${fmt(y[3])}</span><span class="bar" style="--sc:var(--${COND[y[2]][1]});height:${(8 + 40 * (y[3] / mh)).toFixed(0)}px"></span><span class="d">${dShort(k)}</span></button>`).join("")}</div>
+      <a class="btn share" data-share data-text="${esc(text)}" data-url="${esc(url)}" href="https://wa.me/?text=${encodeURIComponent(text + " " + url)}" target="_blank" rel="noopener">${WA}${i === 0 ? "Mandar pra galera no WhatsApp" : i === 1 ? "Mandar amanhã pra galera" : "Mandar esse dia pra galera"}</a>
+    </article>`;
   }
+  function yourCarousel(el, id, label, before, after) {
+    const p = HOJE.picos[id];
+    if (!p || !p.d) return false;
+    el.className = "your-wrap";
+    el.innerHTML = `${before || ""}<div class="carousel" id="yourcar" data-dots="yourdots">${p.d.map((_, i) => dayPanel(id, i, label)).join("")}</div>
+      <div class="dots" id="yourdots" aria-hidden="true">${p.d.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
+      <p class="muted" style="margin:0;font-size:.82rem;text-align:center">Arraste para o lado para ver os próximos dias</p>${after || ""}`;
+    setupCar($("#yourcar"));
+    const sh = $("#share-home"); if (sh) sh.hidden = true;
+    return true;
+  }
+
   /* Praias da cidade do seu pico (ou perto dele), da melhor para a pior */
   function cardHTML(id, km) {
     const p = HOJE.picos[id];
@@ -123,6 +149,14 @@
     el.hidden = false;
     paintFavs();
   }
+  function setHomeShare(id) {
+    const b = $("#share-home"), p = HOJE && HOJE.picos[id];
+    if (!b || !p) return;
+    const s = p.wk[0][0], text = `Tá rolando em ${p.n}? Hoje: ${COND[s][0]} (“${SAY(s)[0]}”), top moment ${hh(p.t[0])} às ${hh(p.t[1])}. Olha a previsão:`;
+    const url = location.origin + B + p.u;
+    b.dataset.text = text; b.dataset.url = url;
+    b.href = "https://wa.me/?text=" + encodeURIComponent(text + " " + url);
+  }
   async function renderYour() {
     const el = $("#your");
     if (!el) return;
@@ -130,8 +164,7 @@
     const list = favs.filter(id => HOJE.picos[id]);
     if (list.length) {
       const id = list.includes(sumFav) ? sumFav : list[0];
-      el.innerHTML = panelHTML(id, `<p class="label">Seu pico</p>
-        ${list.length > 1 ? `<div class="favsw">${list.map(x => `<button type="button" data-sumfav="${x}" aria-pressed="${x === id}">${esc(HOJE.picos[x].n)}</button>`).join("")}</div>` : ""}`);
+      yourCarousel(el, id, "Seu pico", list.length > 1 ? `<div class="scroller">${list.map(x => `<button class="chip" type="button" data-sumfav="${x}" aria-pressed="${x === id}">${esc(HOJE.picos[x].n)}</button>`).join("")}</div>` : "");
       renderLocal(id);
       return;
     }
@@ -141,8 +174,8 @@
     const near = IDX.picos.filter(p => HOJE.picos[p[0]]).map(p => [p, kmTo(loc.lat, loc.lon, p)]).sort((a, b) => a[1] - b[1])[0];
     if (!near) return;
     const [p, k] = near;
-    el.innerHTML = panelHTML(p[0], `<p class="label">Pico mais perto de você${loc.city ? " · " + esc(loc.city) : ""} · ${Math.round(k)} km</p>`) +
-      `<button class="go" type="button" data-fixfav="${p[0]}" style="position:relative">☆ Fixar como meu pico</button>`;
+    yourCarousel(el, p[0], `Mais perto de você${loc.city ? " (" + esc(loc.city) + ")" : ""} · ${Math.round(k)} km`, "",
+      `<button class="btn" type="button" data-fixfav="${p[0]}" style="justify-self:start">☆ Fixar ${esc(HOJE.picos[p[0]].n)} como meu pico</button>`);
     renderLocal(p[0]);
   }
   document.addEventListener("click", e => {
@@ -158,50 +191,51 @@
     sumFav = b.dataset.sumfav; store.set("tr-sumfav", sumFav); renderYour();
   });
 
-  /* ---------- carrossel de dias ---------- */
-  const car = $("#carousel");
-  let panel = 0;
-  function syncPanel() {
-    $$("#tabs .chip").forEach((c, i) => c.setAttribute("aria-pressed", i === panel));
-    $$("#dots i").forEach((d, i) => (d.className = i === panel ? "on" : ""));
-    const t = $$("#tabs .chip")[panel];
-    if (t) t.scrollIntoView({ block: "nearest", inline: "nearest" });
+  /* ---------- carrosséis de dias (arrastar para o lado) ---------- */
+  const reduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const carIdx = c => Math.round(c.scrollLeft / (c.clientWidth + 10));
+  function syncCar(c, i) {
+    c.dataset.idx = i;
+    const dots = c.dataset.dots && document.getElementById(c.dataset.dots);
+    if (dots) [...dots.children].forEach((d, k) => (d.className = k === i ? "on" : ""));
+    $$(`[data-car="${c.id}"]`).forEach(tabs => [...tabs.querySelectorAll("[data-go]")].forEach(t => {
+      const on = +t.dataset.go === i;
+      t.setAttribute("aria-pressed", on);
+      if (on) t.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }));
+    if (c.dataset.days) showDay(i);
   }
-  function goPanel(i) {
-    panel = i;
-    car.scrollTo({ left: i * (car.clientWidth + 10), behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
-    syncPanel();
+  function goCar(c, i, smooth = true) {
+    c.scrollTo({ left: i * (c.clientWidth + 10), behavior: smooth && !reduce() ? "smooth" : "auto" });
+    syncCar(c, i);
   }
-  if (car) {
+  function setupCar(c) {
+    if (!c || c.dataset.ready) return;
+    c.dataset.ready = 1;
     let st;
-    car.addEventListener("scroll", () => {
+    c.addEventListener("scroll", () => {
       clearTimeout(st);
-      st = setTimeout(() => { const i = Math.round(car.scrollLeft / (car.clientWidth + 10)); if (i !== panel) { panel = i; syncPanel(); } }, 90);
+      st = setTimeout(() => { const i = carIdx(c); if (i !== +(c.dataset.idx || 0)) syncCar(c, i); }, 90);
     });
-    window.addEventListener("resize", () => (car.scrollLeft = panel * (car.clientWidth + 10)));
   }
+  $$(".carousel").forEach(setupCar);
+  window.addEventListener("resize", () => $$(".carousel").forEach(c => (c.scrollLeft = (+(c.dataset.idx || 0)) * (c.clientWidth + 10))));
 
-  /* ---------- dias na página do pico ---------- */
-  function showDay(i, scroll) {
+  /* detalhes do dia na página do pico (hora a hora, maré, água) */
+  function showDay(i) {
     const secs = $$("section.day");
     if (!secs.length) return;
     secs.forEach((s, k) => (s.hidden = k !== i));
-    $$("#daytabs .chip").forEach((c, k) => c.setAttribute("aria-pressed", k === i));
-    if (scroll) $("#daytabs").scrollIntoView({ block: "start", behavior: "smooth" });
   }
   document.addEventListener("click", e => {
     const g = e.target.closest("[data-go]");
-    if (g) {
-      const n = +g.dataset.go;
-      if (car && (g.closest("#tabs") || g.closest("#carousel"))) goPanel(n);
-      else if ($("#daytabs")) showDay(Math.max(0, n - 1), true);
-      return;
-    }
-    const d = e.target.closest("#daytabs [data-day]");
-    if (d) showDay(+d.dataset.day, false);
+    if (!g) return;
+    const n = +g.dataset.go;
+    const tabs = g.closest("[data-car]"), c = tabs ? document.getElementById(tabs.dataset.car) : g.closest(".carousel");
+    if (c) { e.preventDefault(); goCar(c, n); }
   });
-  const m = location.hash.match(/^#dia-(\d)$/);
-  if (m) showDay(+m[1], true);
+  const daycar = $("#daycar"), m = location.hash.match(/^#dia-(\d)$/);
+  if (daycar && m) { const i = +m[1]; requestAnimationFrame(() => { goCar(daycar, i, false); daycar.scrollIntoView({ block: "start" }); }); }
 
   /* ---------- passaporte ---------- */
   let visits = store.get("tr-visits", {});
