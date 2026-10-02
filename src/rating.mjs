@@ -46,7 +46,7 @@ export function score(H, per, kind, spd) {
   const { size, q } = quality(H, per, kind, spd);
   const ventoForte = (kind === "maral" && spd > 15) || (kind === "lateral" && spd > 24);
   if (H >= 0.6 && (ventoForte || size - q >= 1)) return 5; // tem onda, mas está mexido
-  if (q < 1.5) return 1;
+  if (q < 1.5) return H < 0.6 ? 1 : 2; // "Marolinha" só para onda pequena de verdade
   if (q < 2.5) return 2;
   if (q < 3.5) return 3;
   return 4;
