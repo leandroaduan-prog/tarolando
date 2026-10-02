@@ -76,6 +76,30 @@ O site também funciona como app:
 - Sem internet, abre a última previsão salva da página inicial e dos picos favoritos.
 - Ícones em `assets/icons/`. O funcionamento offline está em `assets/sw.js`.
 
+## Patrocínios e parceiros
+
+Os dados dos patrocinadores (inclusive valores e permutas) **não ficam neste repositório**, que é público.
+Eles ficam no repositório privado **tarolando-privado**, que o robô baixa na hora de gerar o site.
+Lá estão o passo a passo, os modelos e a calculadora de orçamento.
+
+Configuração (uma vez só):
+1. Publique a pasta `tarolando-privado` pelo GitHub Desktop **com "Keep this code private" marcado**.
+2. No github.com: sua foto › **Settings › Developer settings › Personal access tokens › Fine-grained tokens › Generate new token**.
+   - Nome: `tarolando-privado` · Expiração: 1 ano (anote para renovar)
+   - Repository access: **Only select repositories** › `tarolando-privado`
+   - Permissions › Repository permissions › **Contents: Read-only**
+   - **Generate token** e copie o código.
+3. No repositório **tarolando**: **Settings › Secrets and variables › Actions › New repository secret**.
+   Nome: `PRIVADO_TOKEN` · Valor: o código copiado.
+4. **Actions › Atualizar site › Run workflow**.
+
+## Estatísticas de visitas (só para você)
+
+Crie uma propriedade em [analytics.google.com](https://analytics.google.com), copie o ID (começa com `G-`) e coloque em `config.json`:
+```json
+"analytics": { "ga4": "G-XXXXXXXXXX" }
+```
+
 ## Imagem no WhatsApp
 
 Cada página tem uma imagem de prévia (1200×630) com a previsão do dia, gerada por `scripts/og.py` a cada atualização. Ela aparece quando alguém compartilha o link no WhatsApp, Instagram, Facebook etc. Fontes em `assets/fonts` (licença OFL).

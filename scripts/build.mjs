@@ -8,6 +8,11 @@ import { fetchAll, mockAll, process as proc } from "../src/forecast.mjs";
 import { setContext, homePage, statePage, cityPage, picoPage, textPage, picoPath, cityPath, ufPath, bestOf, esc, dayShort } from "../src/render.mjs";
 import { COND, say, hhmm, fmt, card16, windTxt } from "../src/rating.mjs";
 import { moonInfo } from "../src/moon.mjs";
+import { carregarPrivado } from "../src/privado.mjs";
+import { resolveOnde, PADRAO } from "../src/preco.mjs";
+import { existsSync } from "node:fs";
+import { extname } from "node:path";
+import { createHash } from "node:crypto";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
@@ -41,9 +46,36 @@ const all = raw.map(proc);
 const dates = all[0].days.map(d => d.date);
 const version = now.getTime().toString(36);
 const updatedTxt = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" }).format(now) + (MOCK ? " (dados de exemplo)" : "");
+/* patrocínios e parceiros (dados privados) */
+const privado = carregarPrivado(ROOT);
+const hojeSP = dates[0];
+const logosCopiar = new Map();
+function logoUrl(item) {
+  const src = join(privado.dir, item.logo || "");
+  if (!item.logo || !existsSync(src)) { console.warn("  aviso: logo não encontrado para um patrocinador/parceiro"); return null; }
+  const nome = createHash("sha1").update(item.logo).digest("hex").slice(0, 12) + extname(item.logo).toLowerCase();
+  logosCopiar.set(nome, src);
+  return "/patrocinadores/" + nome;
+}
+const ativos = l => l.filter(x => x.inicio && x.fim && x.inicio <= hojeSP && hojeSP <= x.fim);
+const vagas = (privado.precos && privado.precos.vagasPorPraia) || PADRAO.vagasPorPraia;
+let totalSp = 0;
+for (const sp of ativos(privado.patrocinios).sort((a, b) => (a.inicio < b.inicio ? -1 : 1))) {
+  const url = logoUrl(sp);
+  if (!url) continue;
+  for (const p of resolveOnde(sp.onde, all)) {
+    p.sponsors = p.sponsors || [];
+    if (p.sponsors.length >= vagas) continue;
+    p.sponsors.push({ nome: sp.nome, logo: url, link: sp.link || "" });
+    totalSp++;
+  }
+}
+const parceiros = ativos(privado.parceiros).map(x => ({ nome: x.nome, logo: logoUrl(x), link: x.link || "" })).filter(x => x.logo);
+console.log(privado.existe ? `Patrocínios: ${totalSp} vagas ocupadas hoje · parceiros: ${parceiros.length}` : "Sem pasta privada: site gerado sem patrocinadores.");
+
 const og = {}, ogJobs = [];
 const shareAppText = "O segredo da galera que sempre pega o mar bom 🤫🌊 Esse app avisa a hora certa de cair no seu pico. São mais de 200 picos de surf do Brasil, com previsão atualizada o dia todo. É grátis, mas só até a gente deixar 😅";
-setContext({ base, siteUrl, config, dates, version, updatedTxt, og, shareAppText });
+setContext({ base, siteUrl, config, dates, version, updatedTxt, og, shareAppText, parceiros });
 
 /* imagens de compartilhamento (WhatsApp etc.) */
 const site = siteUrl.replace(/^https?:\/\//, "");
@@ -119,6 +151,8 @@ page("/politica-de-privacidade/", textPage({ path: "/politica-de-privacidade/", 
 <p>Seus picos favoritos, o passaporte do surfista e a última região escolhida ficam salvos só no seu navegador (armazenamento local). Esses dados não são enviados para nós.</p>
 <h2>Localização</h2>
 <p>Se você ainda não tem um pico favorito, a página inicial mostra o pico mais perto de você. Para isso, o navegador consulta o serviço GeoJS (geojs.io), que estima a cidade aproximada a partir do endereço IP, sem pedir sua localização exata. Se você tocar em "Praias perto de mim", o navegador pede permissão para usar a localização do aparelho. Nos dois casos, a localização fica salva só no seu navegador, é usada para ordenar os picos por distância e não é enviada para nós.</p>
+<h2>Estatísticas de visitas</h2>
+<p>Usamos o Google Analytics para contar visitas de forma agregada (quantas pessoas abrem cada página, de qual região e por qual aparelho). Isso nos ajuda a melhorar o site. O Google Analytics usa cookies; você pode bloqueá-los nas configurações do navegador ou instalar o <a href="https://tools.google.com/dlpage/gaoptout?hl=pt-BR">complemento de desativação do Google Analytics</a>.</p>
 <h2>Publicidade e cookies de terceiros</h2>
 <p>Este site pode exibir anúncios do Google AdSense. O Google e seus parceiros usam cookies para mostrar anúncios com base em visitas anteriores a este e a outros sites. Você pode desativar a publicidade personalizada em <a href="https://adssettings.google.com/">Configurações de anúncios do Google</a> e saber mais em <a href="https://policies.google.com/technologies/ads?hl=pt-BR">Como o Google usa cookies em publicidade</a>.</p>
 <h2>Serviços de terceiros</h2>
@@ -130,6 +164,8 @@ page("/politica-de-privacidade/", textPage({ path: "/politica-de-privacidade/", 
 out("/404.html", textPage({ path: "/404.html", title: "Página não encontrada", h1: "Esse pico não existe", desc: "Página não encontrada.", html: `<p>A página que você procurou não foi encontrada. <a href="${base}/">Voltar para o início</a>.</p>` }));
 
 /* arquivos de apoio */
+mkdirSync(join(DIST, "patrocinadores"), { recursive: true });
+for (const [nome, src] of logosCopiar) copyFileSync(src, join(DIST, "patrocinadores", nome));
 for (const f of ["style.css", "app.js"]) copyFileSync(join(ROOT, "assets", f), join(DIST, f));
 /* app instalável (PWA) */
 mkdirSync(join(DIST, "icons"), { recursive: true });
@@ -165,6 +201,7 @@ for (const p of all) {
     a: [+d.bw.at.H.toFixed(2), d.bw.at.per, Math.round(d.bw.at.swDir), Math.round(d.bw.at.dir), Math.round(d.bw.at.spd), d.bw.at.kind],
     hi: d.tide.ext.filter(x => x.t === "Alta").map(x => { const H = Math.floor(x.h), M = Math.round((x.h - H) * 60); return M === 60 ? (H + 1) + "h" : H + "h" + (M ? String(M).padStart(2, "0") : ""); }).join(" e "),
     lv: p.nivel, fl: p.flags,
+    sp: (p.sponsors || []).map(x => [x.nome, x.logo, x.link]),
     d: p.days.map(x => {
       const t = x.top, w = x.ww;
       const hi = x.tide.ext.filter(e => e.t === "Alta").map(e => { const H = Math.floor(e.h), M = Math.round((e.h - H) * 60); return M === 60 ? (H + 1) + "h" : H + "h" + (M ? String(M).padStart(2, "0") : ""); }).join(" e ");

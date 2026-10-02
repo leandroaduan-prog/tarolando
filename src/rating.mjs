@@ -27,17 +27,42 @@ export function windKind(face, dir, spd) {
   if (adiff(dir, face) <= 60) return "maral";
   return "lateral";
 }
+/* Nota do pico. Separa TAMANHO de QUALIDADE:
+   - o tamanho dá a nota "possível" (marolinha, dá pra brincar, tá bom, clássico)
+   - período curto e vento ruim tiram pontos
+   - se o mar tem tamanho mas perdeu 1 nível ou mais por vento/período, vira "Mexido" (e não "Marolinha") */
+export function quality(H, per, kind, spd) {
+  if (H < 0.3) return { size: 0, q: 0 };
+  let size = H < 0.6 ? 1 : H < 1 ? 2 : H < 1.8 ? 3 : 3.5;
+  let adj = 0;
+  if (per >= 12) adj += 0.7; else if (per >= 10) adj += 0.4; else if (per < 6) adj -= 1.0; else if (per < 8) adj -= 0.6;
+  if (kind === "terral" || kind === "sem vento") { if (spd < 25) adj += 0.4; }
+  else if (kind === "lateral") adj -= 0.03 * Math.max(0, spd - 8);
+  else if (kind === "maral") adj -= 0.08 * Math.max(0, spd - 4);
+  return { size, q: Math.max(0, Math.min(4.5, size + adj)) };
+}
 export function score(H, per, kind, spd) {
   if (H < 0.3) return 0;
-  let s = H < 0.6 ? 1 : H < 1 ? 2 : H < 1.8 ? 3 : per >= 11 ? 4 : 3;
-  if (per >= 12 && s >= 2) s++;
-  if (per < 8) s--;
-  if (kind === "maral") { if (spd > 12) s -= 2; else if (spd > 6) s--; if (spd > 15) s = Math.min(s, 2); }
-  else if (kind === "lateral" && spd > 18) s--;
-  else if ((kind === "terral" || kind === "sem vento") && spd < 25 && s >= 3 && per >= 10) s++;
-  s = Math.max(1, Math.min(4, s));
-  if ((kind === "maral" && spd > 15) || (kind === "lateral" && spd > 24)) s = 5; // mexido
-  return s;
+  const { size, q } = quality(H, per, kind, spd);
+  const ventoForte = (kind === "maral" && spd > 15) || (kind === "lateral" && spd > 24);
+  if (H >= 0.6 && (ventoForte || size - q >= 1)) return 5; // tem onda, mas está mexido
+  if (q < 1.5) return 1;
+  if (q < 2.5) return 2;
+  if (q < 3.5) return 3;
+  return 4;
+}
+/* Explica a nota em poucas palavras (ex.: "período curto e vento maral") */
+export function motivo(x) {
+  const r = [];
+  if (x.per && x.per < 8) r.push("período curto");
+  else if (x.per >= 11) r.push("ondulação de período longo");
+  if (x.kind === "maral" && x.spd >= 8) r.push("vento maral");
+  else if (x.kind === "lateral" && x.spd >= 15) r.push("vento lateral forte");
+  else if (x.kind === "terral") r.push("vento terral");
+  else if (x.kind === "sem vento") r.push("sem vento");
+  if (!r.length) return "";
+  const t = r.join(" e ");
+  return x.s === 5 ? `Tem onda, mas com ${t}: mar mexido` : t.charAt(0).toUpperCase() + t.slice(1);
 }
 /* Comentário de cada situação */
 export function say(s) {
@@ -73,7 +98,8 @@ export function windWindow(hs) {
 export function topMoment(hs, bw) {
   const win = hs.filter(x => x.h >= bw.from && x.h < bw.to);
   if (win.length <= 3) return { from: bw.from, to: bw.to, at: bw.at };
-  const v = x => x.H + (x.kind === "terral" || x.kind === "sem vento" ? 0.3 : 0) - x.spd / 100;
+  // prefere horas com vento a favor; vento maral pesa contra
+  const v = x => x.H + (x.kind === "terral" || x.kind === "sem vento" ? 0.5 : 0) - (x.kind === "maral" ? 0.06 * x.spd : x.kind === "lateral" ? 0.02 * x.spd : 0);
   let bi = 0, bs = -1e9;
   for (let i = 0; i + 3 <= win.length; i++) {
     const t = v(win[i]) + v(win[i + 1]) + v(win[i + 2]);

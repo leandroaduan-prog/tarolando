@@ -5,6 +5,13 @@
   "ads": {
     "enabled": false,
     "client": "",
-    "slots": { "home": "", "lista": "", "pico": "" }
+    "slots": {
+      "home": "",
+      "lista": "",
+      "pico": ""
+    }
+  },
+  "analytics": {
+    "ga4": ""
   }
 }

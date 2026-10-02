@@ -279,3 +279,25 @@ a.card-main:hover h3{color:var(--sea)}
 @media (max-width:360px){.share-app small{display:none}}
 .share-app span{min-width:0}
 @media (max-width:899px){.share-app span{max-width:118px}.share-app b{font-size:.8rem}.share-app small{font-size:.66rem}}
+
+/* Patrocínio no painel da praia */
+.topm{position:relative}
+.topm.has-sp .tm-badge,.topm.has-sp .tm-time{margin-right:100px}
+.topm.has-sp .tm-time{font-size:2.2rem}
+.topm.has-sp{min-height:118px}
+.spons{position:absolute;top:10px;right:10px;width:92px;background:#fff;border-radius:12px;padding:5px 6px 7px;display:grid;justify-items:center;gap:3px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.sp-lab{font-size:.58rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#587079}
+.sp-item{display:grid;place-items:center;width:80px;height:48px}
+.sp-item img{max-width:80px;max-height:48px;object-fit:contain;display:block}
+@media (prefers-reduced-motion: no-preference){.sp-item:not([hidden]){animation:spin .35s ease-out}}
+@keyframes spin{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+/* Faixa de parceiros */
+.parceiros{display:grid;gap:8px}
+.parc-row{display:flex;flex-wrap:wrap;gap:10px}
+.parc-row a{display:grid;place-items:center;background:#fff;border:1px solid var(--line);border-radius:12px;width:120px;height:64px;padding:8px}
+.parc-row img{max-width:100%;max-height:100%;object-fit:contain}
+
+.why{font-size:.85rem;font-weight:600;color:var(--muted);position:relative}
+.panel .why{color:inherit;opacity:.85}
+.why.bad{color:var(--bad)}
+.panel .why.bad{color:#FF8D9B;opacity:1}

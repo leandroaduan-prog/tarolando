@@ -1,6 +1,6 @@
 // Modelos das páginas do site.
 import { readFileSync } from "node:fs";
-import { COND, RANK, card16, fmt, hhmm, say, roupa, windTxt } from "./rating.mjs";
+import { COND, RANK, card16, fmt, hhmm, say, roupa, windTxt, motivo } from "./rating.mjs";
 import { UFN, FLAG } from "./picos.mjs";
 import { moonInfo, moonSVG } from "./moon.mjs";
 
@@ -32,6 +32,7 @@ export function pill(s) {
   const on = s === 5 ? 1 : s;
   return `<span class="pill" style="--sc:${color(s)}"><span class="meter" aria-hidden="true">${[1, 2, 3, 4].map(k => `<i class="${k <= on ? "on" : ""}"></i>`).join("")}</span>${COND[s][0]}</span>`;
 }
+export function whyHTML(x) { const m = motivo(x); return m ? `<div class="why${x.s === 5 ? " bad" : ""}">${esc(m)}</div>` : ""; }
 export function sayHTML(s) { const [t, bad] = say(s); return `<span class="say${bad ? " bad" : ""}">${t}</span>`; }
 export function wxIcon(sky, size) {
   const sun = `<circle cx="16" cy="16" r="6" fill="#F2B233"/>${[0, 45, 90, 135, 180, 225, 270, 315].map(a => `<line x1="16" y1="5" x2="16" y2="8" stroke="#F2B233" stroke-width="2" stroke-linecap="round" transform="rotate(${a} 16 16)"/>`).join("")}`;
@@ -130,6 +131,7 @@ function carousel(list, label) {
       <div class="line soft">Onde tá melhor</div>
       <div class="name">${esc(b.p.nome)}</div>
       <div class="line">${pill(d.bw.mx)}${sayHTML(d.bw.mx)}</div>
+      ${whyHTML({ ...d.bw.at, s: d.bw.mx })}
       <div class="line soft">${hhmm(d.bw.from)} às ${hhmm(d.bw.to)} · ${fmt(d.bw.at.H)} m · ${d.bw.at.per}s de ${card16(d.bw.at.swDir)}${hi ? ` · maré alta ${hi}` : ""}</div>
       <div class="windok">${windWinTxt(d.ww)}</div>
       <a class="go" href="${u(picoPath(b.p))}#dia-${i}">Ver ${esc(b.p.nome)}</a>
@@ -149,6 +151,7 @@ function card(p, opts = {}) {
   return `<li class="card"><a class="card-main" href="${u(picoPath(p))}">
     <div class="card-top"><h3>${esc(p.nome)}</h3><div class="city">${esc(p.cidade)} · ${p.uf}${opts.km != null ? ` · ${Math.round(opts.km)} km` : ""} · <span class="tag">${p.nivel}</span> ${flagTags(p)}</div></div>
     <div class="row">${pill(d.bw.mx)}${sayHTML(d.bw.mx)}</div>
+    ${whyHTML({ ...a, s: d.bw.mx })}
     <div class="stats">
       <div class="stat"><span>Ondulação</span><b>${fmt(a.H)} m · ${a.per}s<br>${card16(a.swDir)}</b></div>
       <div class="stat"><span>Vento</span><b>${windTxt(a)}${a.kind !== "sem vento" ? "<br>" + a.kind : ""}</b></div>
@@ -198,7 +201,7 @@ ${(() => { const img = C.og && (C.og[path] || C.og["/"]); return img ? `<meta pr
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800;900&family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="${u("/style.css?v=" + C.version)}">
-${ads}${ld}
+${ads}${C.config.analytics && C.config.analytics.ga4 ? `<script async src="https://www.googletagmanager.com/gtag/js?id=${esc(C.config.analytics.ga4)}"></script><script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());gtag("config",${JSON.stringify(C.config.analytics.ga4)});</script>` : ""}${ld}
 </head><body><div class="wrap">
 <header class="site-head"><div class="brandrow"><a class="home" href="${u("/")}" aria-label="Tá Rolando? página inicial"><img class="logo-mark" src="${u("/icons/logo-mark.png")}" alt="" width="58" height="52">${LOGO}</a>
 <a class="share-app" id="share-app" data-share data-app="1" data-text="${esc(C.shareAppText)}" data-url="${esc(C.siteUrl + "/")}" href="https://wa.me/?text=${encodeURIComponent(C.shareAppText + " " + C.siteUrl + "/")}" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.3-9.4C1.4 8.2 3.6 5 6.9 5c2 0 3.4 1.1 4.1 2.3C11.7 6.1 13.1 5 15.1 5c3.3 0 5.5 3.2 4.2 6.6C19.5 16.4 12 21 12 21z" fill="currentColor"/></svg><span><b>Compartilhe o app</b><small>e ajude a manter grátis</small></span></a></div>
@@ -207,6 +210,7 @@ ${ads}${ld}
 <a class="install-tag" id="install-tag" href="#install" hidden><svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v12m0 0l-5-5m5 5l5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Baixe o app grátis: role até o fim da página</a>
 ${crumbs.length > 1 ? `<nav aria-label="Você está em"><ol class="crumbs">${crumbs.map((c, i) => `<li>${i === crumbs.length - 1 ? esc(c[0]) : `<a href="${u(c[1])}">${esc(c[0])}</a>`}</li>`).join("")}</ol></nav>` : ""}
 ${body}
+${C.parceiros && C.parceiros.length ? `<section class="parceiros" aria-label="Parceiros"><p class="label">Parceiros do Tá Rolando</p><div class="parc-row">${C.parceiros.map(x => `<a href="${esc(x.link || "#")}"${x.link ? ` target="_blank" rel="sponsored noopener"` : ""} title="${esc(x.nome)}"><img src="${u(x.logo)}" alt="${esc(x.nome)}" loading="lazy"></a>`).join("")}</div></section>` : ""}
 <section class="install" id="install" hidden>
   <img src="${u("/icons/icon-192.png")}" alt="" width="48" height="48">
   <div><b>Leve o Tá Rolando no celular</b><small>Instale o app: abre em tela cheia e mostra a última previsão mesmo sem internet.</small></div>
@@ -235,6 +239,7 @@ export function homePage(all) {
     <div class="line soft">${esc(top.p.cidade)} · ${top.p.uf}</div>
     <div class="topm"><span class="tm-badge">Top moment de hoje</span><div class="tm-time">${hhmm(tm.from)} às ${hhmm(tm.to)}</div>
       <div class="line">${pill(d.bw.mx)}${sayHTML(d.bw.mx)}</div>
+      ${whyHTML({ ...tm.at, s: d.bw.mx })}
       <div class="line soft">${fmt(tm.at.H)} m · ${tm.at.per}s de ${card16(tm.at.swDir)} · ${windPh(tm.at)}</div></div>
     <div class="windok">${windWinTxt(d.ww)}</div>
     <p class="soft" style="margin:0;position:relative">Toque na estrela de um pico para ver aqui o top moment do seu pico preferido.</p>
@@ -302,6 +307,10 @@ export function cityPage(list) {
   });
 }
 
+export function sponsorBox(list) {
+  if (!list || !list.length) return "";
+  return `<div class="spons" data-rot aria-label="Patrocinadores"><span class="sp-lab">Patrocínio</span>${list.map((x, k) => `<a class="sp-item" href="${esc(x.link || "#")}"${x.link ? ` target="_blank" rel="sponsored noopener"` : ""}${k ? " hidden" : ""}><img src="${u(x.logo)}" alt="${esc(x.nome)}" loading="lazy"></a>`).join("")}</div>`;
+}
 const ofDay = i => (i === 0 ? "de hoje" : i === 1 ? "de amanhã" : "do dia");
 export function dayShareText(nome, d, i) {
   const t = d.top, s = d.bw.mx, quando = i === 0 ? "Hoje" : i === 1 ? "Amanhã" : `${dayLong(d.date, i)} (${ddmm(d.date)})`;
@@ -312,8 +321,9 @@ function picoDayPanel(p, d, i) {
   const mh = Math.max(1, ...p.days.map(x => x.bw.at.H));
   return `<article class="panel sum" aria-label="${dayLong(d.date, i)} ${ddmm(d.date)}">
     <div class="row" style="justify-content:space-between;position:relative"><p class="label">${dayLong(d.date, i)} · ${ddmm(d.date)}</p><div class="wx" style="font-size:.85rem">${wxIcon(d.wx.sky, 24)}<span>${Math.round(d.wx.tmax)}° · chuva ${d.wx.rain ?? 0}%</span></div></div>
-    <div class="topm"><span class="tm-badge">Top moment ${ofDay(i)}</span><div class="tm-time">${hhmm(t.from)} às ${hhmm(t.to)}</div>
+    <div class="topm${p.sponsors && p.sponsors.length ? " has-sp" : ""}">${sponsorBox(p.sponsors)}<span class="tm-badge">Top moment ${ofDay(i)}</span><div class="tm-time">${hhmm(t.from)} às ${hhmm(t.to)}</div>
       <div class="line">${pill(s)}${sayHTML(s)}</div>
+      ${whyHTML({ ...t.at, s })}
       <div class="line soft">${fmt(t.at.H)} m · ${t.at.per}s de ${card16(t.at.swDir)} · ${windPh(t.at)}</div>
       ${d.bw.to - d.bw.from > 3 ? `<div class="soft" style="font-size:.85rem;position:relative">Janela boa no dia: ${hhmm(d.bw.from)} às ${hhmm(d.bw.to)}${hi ? ` · maré alta ${hi}` : ""}</div>` : hi ? `<div class="soft" style="font-size:.85rem;position:relative">Maré alta ${hi}</div>` : ""}</div>
     <div class="windok">${windWinTxt(d.ww)}</div>

@@ -17,6 +17,15 @@
   const COND = [["Flat", "s0"], ["Marolinha", "s1"], ["Dá pra brincar", "s2"], ["Tá bom", "s3"], ["Clássico", "s4"], ["Mexido", "bad"]];
   const SAY = s => (s === 0 ? ["Vai pescar"] : s === 5 ? ["Esquece", 1] : s === 1 ? ["Força a barra"] : s === 2 ? ["De boa"] : ["Altas"]);
   const pill = s => `<span class="pill" style="--sc:var(--${COND[s][1]})"><span class="meter" aria-hidden="true">${[1, 2, 3, 4].map(k => `<i class="${k <= (s === 5 ? 1 : s) ? "on" : ""}"></i>`).join("")}</span>${COND[s][0]}</span>`;
+  function motivo(per, kind, spd, s) {
+    const r = [];
+    if (per && per < 8) r.push("período curto"); else if (per >= 11) r.push("ondulação de período longo");
+    if (kind === "maral" && spd >= 8) r.push("vento maral"); else if (kind === "lateral" && spd >= 15) r.push("vento lateral forte");
+    else if (kind === "terral") r.push("vento terral"); else if (kind === "sem vento") r.push("sem vento");
+    if (!r.length) return "";
+    const t = r.join(" e ");
+    return `<div class="why${s === 5 ? " bad" : ""}">${s === 5 ? `Tem onda, mas com ${t}: mar mexido` : t.charAt(0).toUpperCase() + t.slice(1)}</div>`;
+  }
   const sayH = s => { const [t, bad] = SAY(s); return `<span class="say${bad ? " bad" : ""}">${t}</span>`; };
 
   /* ---------- favoritos ---------- */
@@ -77,6 +86,10 @@
     return `<svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true" style="vertical-align:middle">${g}</svg>`;
   }
   const WA = '<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M9 8.5c0 3.5 3 6.5 6.5 6.5l1-1.6-2-1-1 .9c-1-.4-2-1.4-2.4-2.4l.9-1-1-2L9 8.5z" fill="currentColor"/></svg>';
+  function spBox(list) {
+    if (!list || !list.length) return "";
+    return `<div class="spons" data-rot aria-label="Patrocinadores"><span class="sp-lab">Patrocínio</span>${list.map((x, k) => `<a class="sp-item" href="${esc(x[2] || "#")}"${x[2] ? ' target="_blank" rel="sponsored noopener"' : ""}${k ? " hidden" : ""}><img src="${B + x[1]}" alt="${esc(x[0])}"></a>`).join("")}</div>`;
+  }
   function dayPanel(id, i, label) {
     const p = HOJE.picos[id], x = p.d[i];
     const [from, to, s, H, per, sd, wd, ws, kind, bf, bt, w, sky, tmax, rain, hi] = x;
@@ -89,8 +102,9 @@
       <div class="row" style="justify-content:space-between;position:relative"><p class="label">${label} · ${dLong(i)} ${ddmm(i)}</p><span class="soft" style="font-size:.85rem;display:inline-flex;align-items:center;gap:6px">${wxIcon(sky)} ${tmax}° · chuva ${rain}%</span></div>
       <div class="name"><a href="${B + p.u}#dia-${i}" style="color:inherit;text-decoration:none">${esc(p.n)}</a></div>
       <div class="line soft">${esc(p.c)} · ${p.uf}</div>
-      <div class="topm"><span class="tm-badge">Top moment ${i === 0 ? "de hoje" : i === 1 ? "de amanhã" : "do dia"}</span><div class="tm-time">${hh(from)} às ${hh(to)}</div>
+      <div class="topm${p.sp && p.sp.length ? " has-sp" : ""}">${spBox(p.sp)}<span class="tm-badge">Top moment ${i === 0 ? "de hoje" : i === 1 ? "de amanhã" : "do dia"}</span><div class="tm-time">${hh(from)} às ${hh(to)}</div>
         <div class="line">${pill(s)}${sayH(s)}</div>
+        ${motivo(per, kind, ws, s)}
         <div class="line soft">${fmt(H)} m · ${per}s de ${c16(sd)} · ${kind === "sem vento" ? "sem vento" : "vento " + ws + " km/h " + c16(wd) + " (" + kind + ")"}</div>
         ${bt - bf > 3 || hi ? `<div class="soft" style="font-size:.85rem;position:relative">${bt - bf > 3 ? `Janela boa no dia: ${hh(bf)} às ${hh(bt)}` : ""}${bt - bf > 3 && hi ? " · " : ""}${hi ? "maré alta " + hi : ""}</div>` : ""}</div>
       <div class="windok">${ww}</div>
@@ -130,6 +144,7 @@
     return `<li class="card"><a class="card-main" href="${B + p.u}">
       <div class="card-top"><h3>${esc(p.n)}</h3><div class="city">${esc(p.c)} · ${p.uf}${km != null ? ` · ${Math.round(km)} km` : ""} · <span class="tag">${esc(p.lv)}</span> ${[...(p.fl || "")].filter(k => FL[k]).map(k => `<span class="tag flag-${k}">${FL[k]}</span>`).join(" ")}</div></div>
       <div class="row">${pill(s)}${sayH(s)}</div>
+      ${motivo(per, kind, ws, s)}
       <div class="stats">
         <div class="stat"><span>Ondulação</span><b>${fmt(H)} m · ${per}s<br>${c16(sd)}</b></div>
         <div class="stat"><span>Vento</span><b>${kind === "sem vento" ? "Sem vento" : ws + " km/h " + c16(wd) + "<br>" + kind}</b></div>
@@ -386,6 +401,21 @@
     e.preventDefault();
     navigator.share({ title: document.title, text: a.dataset.text, url: a.dataset.url }).catch(() => {});
   });
+  /* ---------- rodízio dos patrocinadores (3 s cada, ordem sorteada por visita) ---------- */
+  const SP_MS = 3000, spStart = Math.floor(Math.random() * 1000);
+  let spTick = 0;
+  function rotate() {
+    if (document.hidden) return;
+    spTick++;
+    $$(".spons[data-rot]").forEach(box => {
+      const items = box.querySelectorAll(".sp-item");
+      if (items.length < 2) return;
+      const k = (spStart + spTick) % items.length;
+      items.forEach((a, j) => (a.hidden = j !== k));
+    });
+  }
+  $$(".spons[data-rot]").forEach(box => { const items = box.querySelectorAll(".sp-item"); if (items.length > 1) items.forEach((a, j) => (a.hidden = j !== spStart % items.length)); });
+  setInterval(rotate, SP_MS);
   paintFavs();
   paintCheckin();
   renderYour();

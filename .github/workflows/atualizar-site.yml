@@ -20,8 +20,17 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      PRIVADO_TOKEN: ${{ secrets.PRIVADO_TOKEN }}
     steps:
       - uses: actions/checkout@v4
+      - name: Baixar dados privados (patrocínios)
+        if: env.PRIVADO_TOKEN != ''
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/tarolando-privado
+          token: ${{ secrets.PRIVADO_TOKEN }}
+          path: privado
       - uses: actions/setup-node@v4
         with:
           node-version: 20
